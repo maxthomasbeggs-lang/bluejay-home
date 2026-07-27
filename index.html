@@ -1810,6 +1810,7 @@ let slideQueue = [];
 
 function buildSlideQueue(){
   slideQueue = [];
+  _todayEventPages = null; // force a fresh measured pagination
   SLIDESHOW_SECTIONS.forEach(section=>{
     if(section==='calendar'){
       const pages = Math.max(1, getTodayEventPages().length);
@@ -1851,41 +1852,90 @@ function todaysEventItems(){
     });
 }
 
-// Split today's events into pages so each page fits at a readable size.
-// Heuristic cap on events-per-page based on viewport height; fitSlide then
-// fine-tunes the exact scale. One page always exists (may be empty).
+// Measured pagination cache. Rebuilt by computeTodayEventPages() and read by
+// everything else so the queue, the dots, and the render all agree.
+let _todayEventPages = null;
+
 function getTodayEventPages(){
-  const items = todaysEventItems();
-  if(!items.length) return [[]];
-  const vh = window.innerHeight || 800;
-  // Roughly: reserve ~22vh for title/sub/padding, each event needs ~10vh at floor size.
-  const perPage = Math.max(3, Math.floor((vh*0.78) / (vh*0.10)));
-  const pages = [];
-  for(let i=0;i<items.length;i+=perPage) pages.push(items.slice(i,i+perPage));
-  return pages;
+  if(_todayEventPages) return _todayEventPages;
+  computeTodayEventPages();
+  return _todayEventPages;
 }
 
-function todaysLunchItems(){
-  if(!menu.weeks || !menu.weeks.length) return null; // null = no menu uploaded
-  const today = new Date(); today.setHours(0,0,0,0);
-  for(const week of menu.weeks){
-    for(const d of (week.days||[])){
-      const dt = parseMenuDate(d.date);
-      if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
+// Compute how the available height in a slide splits (used by both the
+// paginator and the fit engine so they never disagree).
+function slideAvailHeight(section, layer){
+  const secStyle = getComputedStyle(section);
+  const padTop = parseFloat(secStyle.paddingTop) || 0;
+  const padBot = parseFloat(secStyle.paddingBottom) || 0;
+  return section.clientHeight - padTop - padBot -
+    (layer.offsetTop - section.offsetTop - padTop);
+}
+
+// Split today's events into pages by MEASURING, not guessing. We render events
+// into the real slide container one more at a time; when the number on the
+// page can no longer fit at or above FIT_MIN scale, we close the page and start
+// a new one. This is what makes "too much → extra slide" actually work: the
+// same fit math that sizes the slide also decides where the page breaks.
+function computeTodayEventPages(){
+  const items = todaysEventItems();
+  if(!items.length){ _todayEventPages = [[]]; return; }
+
+  const host = document.getElementById('slideCalToday');
+  const section = document.getElementById('sec-calendar');
+  // If we can't measure (e.g. not in slideshow DOM yet), fall back to a
+  // conservative fixed split so nothing is lost.
+  if(!host || !section){
+    const per = 5, pages=[];
+    for(let i=0;i<items.length;i+=per) pages.push(items.slice(i,i+per));
+    _todayEventPages = pages; return;
+  }
+
+  const wasHidden = !document.body.classList.contains('slideshow-mode');
+  if(wasHidden) document.body.classList.add('slideshow-mode');
+  const prevActive = document.querySelector('.section.active');
+  section.classList.add('active');
+
+  const measurePageScale = (subset)=>{
+    host.innerHTML = renderEventsFitLayer(subset, 1, 1); // page/pages label irrelevant here
+    const layer = host.querySelector('.fit-layer');
+    if(!layer) return 1;
+    layer.style.setProperty('--fit','1');
+    void layer.offsetHeight;
+    const natural = layer.scrollHeight;
+    const avail = slideAvailHeight(section, layer);
+    if(natural<=0 || avail<=0) return 1;
+    return Math.min(1.9, (avail/natural)*0.98);
+  };
+
+  const pages = [];
+  let current = [];
+  for(const it of items){
+    const trial = current.concat([it]);
+    const scale = measurePageScale(trial);
+    if(scale < FIT_MIN && current.length){
+      // Adding this one pushes below the floor → close current page, start new.
+      pages.push(current);
+      current = [it];
+    } else {
+      current = trial;
     }
   }
-  return []; // menu exists but nothing listed for today (weekend / no-school day)
+  if(current.length) pages.push(current);
+
+  // Restore DOM state we touched during measurement.
+  host.innerHTML = '';
+  if(prevActive){ section.classList.remove('active'); prevActive.classList.add('active'); }
+  if(wasHidden) document.body.classList.remove('slideshow-mode');
+
+  _todayEventPages = pages.length ? pages : [[]];
 }
 
-// ── Render: today's events slide ──────────────────────────────
-function renderSlideCalToday(page, pages){
-  const host = document.getElementById('slideCalToday');
-  if(!host) return;
+// Build just the events fit-layer HTML (shared by the paginator's measurement
+// pass and the real render).
+function renderEventsFitLayer(items, page, totalPages){
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const allPages = getTodayEventPages();
-  const items = allPages[page] || [];
-  const totalPages = pages || allPages.length;
   const pageLabel = totalPages>1 ? `Today's Events · ${page+1} of ${totalPages}` : "Today's Events";
   let inner;
   if(!items.length){
@@ -1905,11 +1955,33 @@ function renderSlideCalToday(page, pages){
       </div>`;
     }).join('') + `</div>`;
   }
-  host.innerHTML = `<div class="fit-layer">
+  return `<div class="fit-layer">
     <div class="slide-day-sub">${dateLabel}</div>
     <div class="slide-day-title">${pageLabel}</div>
     ${inner}
   </div>`;
+}
+
+function todaysLunchItems(){
+  if(!menu.weeks || !menu.weeks.length) return null; // null = no menu uploaded
+  const today = new Date(); today.setHours(0,0,0,0);
+  for(const week of menu.weeks){
+    for(const d of (week.days||[])){
+      const dt = parseMenuDate(d.date);
+      if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
+    }
+  }
+  return []; // menu exists but nothing listed for today (weekend / no-school day)
+}
+
+// ── Render: today's events slide ──────────────────────────────
+function renderSlideCalToday(page, pages){
+  const host = document.getElementById('slideCalToday');
+  if(!host) return;
+  const allPages = getTodayEventPages();
+  const items = allPages[page] || [];
+  const totalPages = pages || allPages.length;
+  host.innerHTML = renderEventsFitLayer(items, page, totalPages);
 }
 
 // ── Render: today's lunch slide ───────────────────────────────
@@ -1945,17 +2017,9 @@ function fitActiveSlide(){
   const section = document.querySelector('.section.active');
   if(!section) return;
   const layer = section.querySelector('.fit-layer');
-  const main = document.querySelector('.app-main');
-  if(!layer || !main) return;
+  if(!layer) return;
 
-  // Available height inside the section (minus its own vertical padding).
-  const secStyle = getComputedStyle(section);
-  const padTop = parseFloat(secStyle.paddingTop) || 0;
-  const padBot = parseFloat(secStyle.paddingBottom) || 0;
-  // The hero (on home) and section-top sit outside the fit-layer on some
-  // slides; measure space actually left for the layer by using its offset.
-  const avail = section.clientHeight - padTop - padBot -
-    (layer.offsetTop - section.offsetTop - padTop);
+  const avail = slideAvailHeight(section, layer);
 
   // Reset to neutral, measure natural height, then scale.
   layer.style.setProperty('--fit', '1');

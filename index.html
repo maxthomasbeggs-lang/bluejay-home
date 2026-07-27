@@ -379,7 +379,6 @@
     <div class="section-top-left"><h2>Lunch <span>Menu</span></h2><p>Upload the monthly menu PDF and it'll be split into weeks automatically</p></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input').click())">📄 Upload Monthly PDF</button>
-      <button class="btn btn-primary" onclick="requireAuth(addBlankWeek)">+ Add Week</button>
     </div>
   </div>
 
@@ -393,8 +392,6 @@
       <div id="lunchWeekSub" style="font-size:11px;color:var(--text3)"></div>
     </div>
     <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(1)" title="Next week">›</button>
-    <button class="btn btn-ghost" onclick="requireAuth(openEditMenu)">✏️ Edit Week</button>
-    <button class="icon-btn" title="Remove this week" onclick="requireAuth(removeCurrentWeek)">✕</button>
   </div>
 
   <div class="menu-week" id="menuGrid"></div>
@@ -554,18 +551,6 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-event')">Cancel</button>
       <button class="btn btn-primary" onclick="addEvent()">Add Event</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg" id="modal-edit-menu">
-  <div class="modal" style="max-width:560px">
-    <h2>Edit Week</h2>
-    <div class="field"><label>Week Label</label><input id="fm-weekof" placeholder="e.g. Week of Sep 2" /></div>
-    <div id="menu-edit-days"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-edit-menu')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveMenu()">Save Week</button>
     </div>
   </div>
 </div>
@@ -994,7 +979,7 @@ function renderMenu(){
   const labelEl = document.getElementById('lunchWeekLabel');
   const subEl = document.getElementById('lunchWeekSub');
   if(!menu.weeks || !menu.weeks.length){
-    grid.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No lunch menu yet.<br>Upload the monthly PDF, or hit "+ Add Week" to enter it by hand.</p></div>';
+    grid.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No lunch menu yet.<br>Upload the monthly PDF above to get started.</p></div>';
     labelEl.textContent='No weeks yet';
     subEl.textContent='';
     return;
@@ -1015,48 +1000,6 @@ function shiftWeek(delta){
   if(!menu.weeks || !menu.weeks.length) return;
   currentWeekIdx = (currentWeekIdx + delta + menu.weeks.length) % menu.weeks.length;
   renderMenu();
-}
-async function addBlankWeek(){
-  if(!menu.weeks) menu.weeks=[];
-  menu.weeks.push({weekOf:'New Week', days: WEEKDAYS.map(d=>({day:d, date:'', items:[]}))});
-  currentWeekIdx = menu.weeks.length-1;
-  await saveAll(); renderAll();
-  openEditMenu();
-}
-async function removeCurrentWeek(){
-  if(!menu.weeks || !menu.weeks.length) return;
-  if(!confirm('Remove this week from the lunch menu?')) return;
-  menu.weeks.splice(currentWeekIdx,1);
-  currentWeekIdx = Math.max(0, currentWeekIdx-1);
-  await saveAll(); renderAll();
-}
-function openEditMenu(){
-  if(!menu.weeks || !menu.weeks.length){ addBlankWeek(); return; }
-  const week = menu.weeks[currentWeekIdx];
-  document.getElementById('fm-weekof').value = week.weekOf || '';
-  document.getElementById('menu-edit-days').innerHTML = WEEKDAYS.map(dayName=>{
-    const d = (week.days||[]).find(x=>x.day===dayName) || {items:[]};
-    return `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--gold-light);margin-bottom:8px">${dayName}</div>
-      <div class="field"><textarea data-day="${dayName}" rows="4" placeholder="One item per line, e.g.&#10;Chicken Nuggets&#10;Corn&#10;Applesauce&#10;Milk">${(d.items||[]).join('\n')}</textarea></div>
-    </div>`;
-  }).join('');
-  openModal('modal-edit-menu');
-}
-async function saveMenu(){
-  if(!menu.weeks || !menu.weeks.length) return;
-  const week = menu.weeks[currentWeekIdx];
-  week.weekOf = document.getElementById('fm-weekof').value.trim() || week.weekOf || 'Week';
-  week.days = week.days || WEEKDAYS.map(d=>({day:d, date:'', items:[]}));
-  document.querySelectorAll('#menu-edit-days textarea').forEach(ta=>{
-    const dayName = ta.dataset.day;
-    const items = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    let d = week.days.find(x=>x.day===dayName);
-    if(!d){ d={day:dayName, date:'', items:[]}; week.days.push(d); }
-    d.items = items;
-  });
-  closeModal('modal-edit-menu');
-  await saveAll(); renderAll();
 }
 function findNearestWeekToToday(weeks){
   if(!weeks || !weeks.length) return 0;
@@ -1117,72 +1060,123 @@ function clusterLines(items, tol){
   lines.sort((a,b)=>b.gy-a.gy);
   return lines;
 }
-function clusterBands(lines){
-  if(!lines.length) return [];
-  const gaps=[];
-  for(let i=1;i<lines.length;i++) gaps.push(lines[i-1].gy-lines[i].gy);
-  gaps.sort((a,b)=>a-b);
-  const median = gaps.length ? gaps[Math.floor(gaps.length/2)] : 12;
-  const threshold = Math.max(median*1.8, median+8, 18);
-  const bands=[]; let cur=[lines[0]];
-  for(let i=1;i<lines.length;i++){
-    if((lines[i-1].gy-lines[i].gy) > threshold){ bands.push(cur); cur=[]; }
-    cur.push(lines[i]);
+const MONTH_TOKEN_RE = new RegExp('^('+MONTH_NAMES.map(m=>m.slice(0,3)).join('|')+')[a-z]*\\.?(?:\\s+(\\d{1,2}))?$','i');
+function classifyMonthToken(text){
+  const t = text.replace(/\.$/,'').trim();
+  const m = t.match(MONTH_TOKEN_RE);
+  if(!m) return null;
+  const abbr = m[1].toLowerCase();
+  const month = MONTH_NAMES.find(mn=>mn.toLowerCase().startsWith(abbr));
+  return month ? { month, day:m[2]||null } : null;
+}
+function isBoilerplateCell(text){
+  const t = text.trim();
+  if(/^(may|please)?\s*choose:?$/i.test(t)) return true;
+  if(/equal opportunity provider/i.test(t)) return true;
+  if(/^revised\s/i.test(t)) return true;
+  return false;
+}
+// Pairs each date number in a header row with the weekday name that precedes it in
+// left-to-right order. (Distance-to-column-center is unreliable here: date numbers often
+// sit closer to the START of the NEXT day's label than the center of their own day.)
+function extractHeaderDates(toks){
+  const sorted = [...toks].sort((a,b)=>a.x-b.x);
+  const dateByName = {};
+  let currentDay = null;
+  sorted.forEach(t=>{
+    const clean = t.text.replace(/\.$/,'').trim();
+    const wd = WEEKDAY_NAMES[clean.toLowerCase()];
+    if(wd){ currentDay = wd; return; }
+    if(!currentDay || dateByName[currentDay]) return;
+    if(/^\d{1,2}$/.test(clean)){ dateByName[currentDay] = clean; return; }
+    const mt = classifyMonthToken(clean); // handles combined tokens like "May 29" or "Jun 1"
+    if(mt && mt.day){ dateByName[currentDay] = mt.day; }
+  });
+  return dateByName;
+}
+function monthTokenText(toks){
+  for(const tk of toks){
+    const clean = tk.text.replace(/\.$/,'').trim();
+    const mt = classifyMonthToken(clean);
+    if(mt) return mt.month;
   }
-  if(cur.length) bands.push(cur);
-  return bands;
+  return null;
 }
-function findWeekdayHeader(items){
+// Finds EVERY weekday-name header row on the page (real monthly menus usually repeat
+// a Mon–Fri header once per week, not just once for the whole month).
+function findAllWeekdayHeaders(items){
   const matches = items.filter(it=> WEEKDAY_NAMES[it.text.replace(/\.$/,'').toLowerCase()]);
-  if(matches.length<3) return null;
+  if(matches.length<3) return [];
   const byRow = {};
-  matches.forEach(m=>{ const key=Math.round(m.gy/4)*4; (byRow[key]=byRow[key]||[]).push(m); });
-  let bestKey=null, bestCount=0;
-  Object.keys(byRow).forEach(k=>{ if(byRow[k].length>bestCount){ bestCount=byRow[k].length; bestKey=k; } });
-  if(bestKey===null || bestCount<3) return null;
-  const headerItems = byRow[bestKey].sort((a,b)=>a.x-b.x);
-  return {
-    gy: parseFloat(bestKey),
-    cols: headerItems.map(h=>({ name: WEEKDAY_NAMES[h.text.replace(/\.$/,'').toLowerCase()], x:h.x }))
-  };
+  matches.forEach(m=>{ const key=Math.round(m.gy/8)*8; (byRow[key]=byRow[key]||[]).push(m); });
+  const headerKeys = Object.keys(byRow).map(Number).filter(k=>byRow[k].length>=2).sort((a,b)=>b-a); // top → bottom
+  return headerKeys.map(hk=>{
+    // Header text can jitter a few points off the rounded bucket — gather every plausible
+    // header token (weekday name, 1–2 digit date number, month name) within a wider window,
+    // then use that token set's own min/max y as the row's precise vertical extent. This
+    // matters: using the rounded bucket itself as a slice boundary lets a few header words
+    // leak into the food band below it.
+    const related = items.filter(it=>Math.abs(it.gy-hk)<=10);
+    const isHeaderToken = it=>{
+      const t = it.text.replace(/\.$/,'').trim();
+      if(WEEKDAY_NAMES[t.toLowerCase()]) return true;
+      if(/^\d{1,2}$/.test(t)) return true;
+      if(classifyMonthToken(t)) return true;
+      return false;
+    };
+    const toks = related.filter(isHeaderToken);
+    const ys = toks.map(t=>t.gy);
+    const cols = byRow[hk].slice().sort((a,b)=>a.x-b.x).map(h=>({name: WEEKDAY_NAMES[h.text.replace(/\.$/,'').toLowerCase()], x:h.x}));
+    return { yTop:Math.max(...ys), yBottom:Math.min(...ys), cols, toks, month: monthTokenText(toks) };
+  });
 }
-function nearestColIdx(x, cols){
-  let best=0, bestDist=Infinity;
-  cols.forEach((c,i)=>{ const d=Math.abs(x-c.x); if(d<bestDist){ bestDist=d; best=i; } });
-  return best;
+function colBoundaries(cols){
+  const b=[-Infinity];
+  for(let i=0;i<cols.length-1;i++) b.push((cols[i].x+cols[i+1].x)/2);
+  b.push(Infinity);
+  return b;
 }
-// Grid-style monthly calendar (Mon–Fri columns, one row band per week)
+function colIndexForX(x, bounds){
+  for(let i=0;i<bounds.length-1;i++){ if(x>=bounds[i] && x<bounds[i+1]) return i; }
+  return bounds.length-2;
+}
+// Grid-style monthly calendar: one Mon–Fri header row per week, food items in the lines below it
+// down to (but not including) the next week's header.
 function parseGridStyle(items){
-  const header = findWeekdayHeader(items);
-  if(!header) return [];
-  const monthYear = detectMonthYear(items);
-  const below = items.filter(it=> it.gy < header.gy - 2);
-  const lines = clusterLines(below, 4);
-  const bands = clusterBands(lines);
+  const headers = findAllWeekdayHeaders(items);
+  if(!headers.length) return [];
+  let canonical = headers[0].cols;
+  headers.forEach(h=>{ if(h.cols.length>canonical.length) canonical=h.cols; });
+  const bounds = colBoundaries(canonical);
   const weeks = [];
-  bands.forEach(bandLines=>{
-    const cellsByCol = header.cols.map(()=>[]);
-    bandLines.forEach(line=>{
-      line.items.forEach(it=>{
-        const idx = nearestColIdx(it.x, header.cols);
-        cellsByCol[idx].push(it.text);
+  let lastMonth = null;
+  headers.forEach((h,i)=>{
+    if(h.month) lastMonth = h.month;
+    const lo = (i+1<headers.length) ? headers[i+1].yTop+2 : -Infinity;
+    const hi = h.yBottom-2;
+    const band = items.filter(it=> it.gy>lo && it.gy<hi);
+    const lines = clusterLines(band,4);
+    const cellsByCol = canonical.map(()=>[]);
+    lines.forEach(line=>{
+      const perCol = canonical.map(()=>[]);
+      line.items.forEach(it=>{ perCol[colIndexForX(it.x,bounds)].push(it.text); });
+      perCol.forEach((words,ci)=>{
+        const text = words.join(' ').trim();
+        if(text && !isBoilerplateCell(text)) cellsByCol[ci].push(text);
       });
     });
-    const days = header.cols.map((c,i)=>{
-      let texts = cellsByCol[i];
-      let date = '';
-      if(texts.length && /^\d{1,2}$/.test(texts[0])){
-        const num = texts[0];
-        date = monthYear ? (monthAbbrev(monthYear.month)+' '+num) : num;
-        texts = texts.slice(1);
-      }
-      return { day:c.name, date, items:texts.filter(Boolean) };
+    const dateByName = extractHeaderDates(h.toks);
+    const days = canonical.map((c,ci)=>{
+      const num = dateByName[c.name] || '';
+      const date = num ? (lastMonth ? monthAbbrev(lastMonth)+' '+num : num) : '';
+      return { day:c.name, date, items: cellsByCol[ci] };
     });
     const filled = days.filter(d=>d.items.length>0 || d.date);
-    if(filled.length>=2){
-      const mon = days.find(d=>d.day==='Monday' && (d.date||d.items.length));
-      const first = days.find(d=>d.date||d.items.length);
-      const label = (mon||first) ? 'Week of '+((mon||first).date||(mon||first).day) : 'Week';
+    if(filled.length>=1){
+      const withDate = days.find(d=>d.date);
+      const mon = days.find(d=>d.day==='Monday' && d.date) || withDate;
+      const first = mon || days.find(d=>d.items.length);
+      const label = first ? 'Week of '+(first.date||first.day) : ('Week '+(i+1));
       weeks.push({ weekOf: label, days });
     }
   });

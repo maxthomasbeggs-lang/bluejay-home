@@ -260,8 +260,9 @@
   /* ── Slideshow sizing: fluid, viewport-height-based — scales continuously to ANY screen
      (phone landscape, Chromebook, TV) instead of jumping between fixed breakpoints.
      .section gets permanent bottom padding so the fixed dots bar can never overlap content. */
-  body.slideshow-mode .app-main { padding-bottom:0; height:100vh; display:flex; flex-direction:column; justify-content:center; overflow:hidden; }
-  body.slideshow-mode .section { max-width:1300px; width:100%; padding-top:clamp(4px,1vh,10px); padding-bottom:clamp(48px,9vh,64px); box-sizing:border-box; overflow-y:auto; }
+  body.slideshow-mode .app-shell { height:100vh; overflow:hidden; }
+  body.slideshow-mode .app-main { padding-bottom:0; height:100vh; flex:none; display:flex; flex-direction:column; justify-content:center; overflow:hidden; min-height:0; }
+  body.slideshow-mode .section { max-width:1300px; width:100%; max-height:100vh; min-height:0; padding-top:clamp(4px,1vh,10px); padding-bottom:clamp(48px,9vh,64px); box-sizing:border-box; overflow-y:auto; }
   body.slideshow-mode .hero { padding:clamp(6px,2.2vh,28px) 24px clamp(4px,1.4vh,18px); flex-shrink:0; }
   body.slideshow-mode .hero-logo { width:clamp(30px,7.5vh,76px); height:clamp(30px,7.5vh,76px); margin-bottom:clamp(2px,0.8vh,10px); }
   body.slideshow-mode .hero-eyebrow { font-size:clamp(8px,1.3vh,13px); letter-spacing:3px; margin-bottom:clamp(2px,0.6vh,8px); }

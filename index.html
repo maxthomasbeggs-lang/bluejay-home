@@ -136,7 +136,7 @@
 
   .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; }
   .info-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; position:relative; }
-  .info-card .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .info-card .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px; padding-right:78px; }
   .info-card h3 { font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:700; letter-spacing:0.3px; }
   .info-card .tag { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 9px; border-radius:6px; background:rgba(217,161,37,0.16); color:var(--gold-light); white-space:nowrap; }
   .info-card .meta-row { font-size:12.5px; color:var(--text2); margin-top:3px; display:flex; align-items:center; gap:6px; }
@@ -209,6 +209,26 @@
   @keyframes loading { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
 
   @media (max-width:600px){ .field-row{flex-direction:column} .section{padding:20px 14px 40px} }
+
+  /* ── Slideshow mode ─────────────────────────────────────── */
+  .slideshow-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gold-light); background:rgba(217,161,37,0.1); border:1px solid rgba(217,161,37,0.3); border-radius:6px; cursor:pointer; font-family:'Barlow',sans-serif; width:100%; transition:all 0.15s; }
+  .slideshow-btn:hover { background:rgba(217,161,37,0.18); }
+  body.slideshow-mode .sidebar,
+  body.slideshow-mode .utility-bar,
+  body.slideshow-mode .setup-banner,
+  body.slideshow-mode .btn-primary,
+  body.slideshow-mode .card-actions,
+  body.slideshow-mode .quicklinks,
+  body.slideshow-mode .nextup { display:none !important; }
+  body.slideshow-mode .app-main { padding-bottom:0; }
+  body.slideshow-mode .section { max-width:1300px; padding-top:8px; }
+  body.slideshow-mode .hero { padding-top:36px; }
+  .slideshow-exit-btn { position:fixed; top:18px; right:18px; z-index:999; padding:9px 16px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Barlow',sans-serif; font-weight:600; font-size:12px; cursor:pointer; backdrop-filter:blur(10px); display:none; }
+  body.slideshow-mode .slideshow-exit-btn { display:block; }
+  .slideshow-dots { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:999; display:none; gap:9px; padding:8px 14px; background:rgba(10,24,38,0.7); border:1px solid var(--glass-border); border-radius:20px; backdrop-filter:blur(10px); }
+  body.slideshow-mode .slideshow-dots { display:flex; }
+  .slideshow-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.25); transition:all 0.2s; }
+  .slideshow-dot.active { background:var(--gold-light); width:20px; border-radius:4px; }
 </style>
 </head>
 <body>
@@ -224,7 +244,7 @@
   <div class="sidebar-brand"><img class="crest" src="apple-touch-icon.png" alt="Bluejays Forever logo" /><div class="brand-text">Bluejays<small>Forever</small></div></div>
   <nav class="sidebar-nav">
     <button class="nav-link active" onclick="showSection('home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
-    <button class="nav-link" onclick="showSection('announcements')"><span class="nav-icon">📣</span><span class="nav-label">News</span></button>
+    <button class="nav-link" onclick="requireAuth(()=>showSection('announcements'))"><span class="nav-icon">📣</span><span class="nav-label">News</span></button>
     <button class="nav-link" onclick="showSection('sports')"><span class="nav-icon">🏆</span><span class="nav-label">Sports</span></button>
     <button class="nav-link" onclick="showSection('clubs')"><span class="nav-icon">🎭</span><span class="nav-label">Clubs</span></button>
     <button class="nav-link" onclick="showSection('lunch')"><span class="nav-icon">🍽️</span><span class="nav-label">Lunch</span></button>
@@ -232,6 +252,9 @@
     <button class="nav-link" onclick="showSection('calendar')"><span class="nav-icon">📅</span><span class="nav-label">Calendar</span></button>
   </nav>
   <div class="sidebar-footer">
+    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through Home, News, Events, Lunch & Classes for screen mirroring">
+      🖥️ Slideshow Mode
+    </button>
     <button id="reset-data-btn" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
       style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Barlow',sans-serif;transition:all 0.15s;width:100%;">
       Reset Data
@@ -246,6 +269,7 @@
 <div class="app-main">
 
 <div class="utility-bar">
+  <button class="slideshow-btn" style="width:auto" onclick="startSlideshow()" title="Screen mirroring slideshow">🖥️ Slideshow</button>
   <button onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
     style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Barlow',sans-serif;">
     Reset Data
@@ -337,7 +361,7 @@
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Period</th><th>Class / Block</th><th>Start</th><th>End</th><th></th></tr></thead>
+      <thead><tr><th>Period</th><th>Passing Time (min)</th><th>Start</th><th>End</th><th></th></tr></thead>
       <tbody id="bellBody"></tbody>
     </table>
   </div>
@@ -379,6 +403,10 @@
 
 </div><!-- /app-main -->
 </div><!-- /app-shell -->
+
+<button class="slideshow-exit-btn" onclick="stopSlideshow()">✕ Exit Slideshow</button>
+<div class="slideshow-dots" id="slideshow-dots"></div>
+
 
 <!-- MODALS -->
 <div class="modal-bg" id="modal-add-announce">
@@ -455,7 +483,7 @@
   <div class="modal">
     <h2>Add Period</h2>
     <div class="field"><label>Period Label</label><input id="fp-period" placeholder="e.g. 1st Period" /></div>
-    <div class="field"><label>Class / Block Name</label><input id="fp-class" placeholder="e.g. Homeroom / Advisory" /></div>
+    <div class="field"><label>Passing Time (min)</label><input id="fp-class" type="number" min="0" placeholder="e.g. 5" /></div>
     <div class="field-row">
       <div class="field"><label>Start Time</label><input id="fp-start" placeholder="e.g. 7:50 AM" /></div>
       <div class="field"><label>End Time</label><input id="fp-end" placeholder="e.g. 8:35 AM" /></div>
@@ -497,7 +525,7 @@
 
 <div class="modal-bg" id="modal-auth">
   <div class="modal" style="max-width:340px">
-    <h2>Staff Access</h2>
+    <h2>StuCo Access</h2>
     <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Enter the password to make changes.</p>
     <div class="field">
       <label>Password</label>
@@ -551,7 +579,7 @@ CREATE POLICY "allow_all" ON school_state FOR ALL USING (true) WITH CHECK (true)
 ══════════════════════════════════════════════════════════════
   🟢 STEP 3 — SET AN ADMIN PASSWORD
 ══════════════════════════════════════════════════════════════ */
-const ADMIN_PASSWORD = 'raytown2026'; // change this to your own password
+const ADMIN_PASSWORD = 'WildR12!'; // change this to your own password
 
 // ── Init ─────────────────────────────────────────────────────
 let sb = null;
@@ -584,13 +612,13 @@ const DEFAULT_CLUBS = [
   {id:3, name:'Art Club', sponsor:'Mrs. Kim', day:'Thursdays', time:'3:15–4:00 PM', room:'Art Room', desc:'Open studio time for painting, drawing, and crafts.'},
 ];
 const DEFAULT_BELL = [
-  {id:1, period:'1st Period', cls:'Homeroom / Advisory', start:'7:50 AM', end:'8:10 AM'},
-  {id:2, period:'2nd Period', cls:'Block A', start:'8:15 AM', end:'9:20 AM'},
-  {id:3, period:'3rd Period', cls:'Block B', start:'9:25 AM', end:'10:30 AM'},
+  {id:1, period:'1st Period', cls:'—', start:'7:50 AM', end:'8:10 AM'},
+  {id:2, period:'2nd Period', cls:'5', start:'8:15 AM', end:'9:20 AM'},
+  {id:3, period:'3rd Period', cls:'5', start:'9:25 AM', end:'10:30 AM'},
   {id:4, period:'Lunch', cls:'—', start:'10:30 AM', end:'11:10 AM'},
-  {id:5, period:'4th Period', cls:'Block C', start:'11:15 AM', end:'12:20 PM'},
-  {id:6, period:'5th Period', cls:'Block D', start:'12:25 PM', end:'1:30 PM'},
-  {id:7, period:'6th Period', cls:'Block E', start:'1:35 PM', end:'2:35 PM'},
+  {id:5, period:'4th Period', cls:'5', start:'11:15 AM', end:'12:20 PM'},
+  {id:6, period:'5th Period', cls:'5', start:'12:25 PM', end:'1:30 PM'},
+  {id:7, period:'6th Period', cls:'5', start:'1:35 PM', end:'2:35 PM'},
 ];
 const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 const DEFAULT_MENU = {
@@ -1103,6 +1131,48 @@ function renderAll(){
   renderCalendar();
   renderNextUp();
 }
+
+// ── Slideshow mode (for Chromebook / iPhone screen mirroring) ─
+const SLIDESHOW_SECTIONS = ['home','announcements','calendar','lunch','bell'];
+const SLIDESHOW_SECONDS = 12;
+let slideshowTimer = null;
+let slideshowIdx = 0;
+
+function renderSlideshowDots(){
+  const dots = document.getElementById('slideshow-dots');
+  if(!dots) return;
+  dots.innerHTML = SLIDESHOW_SECTIONS.map((s,i)=>`<span class="slideshow-dot${i===slideshowIdx?' active':''}"></span>`).join('');
+}
+
+function slideshowGoTo(i){
+  slideshowIdx = i % SLIDESHOW_SECTIONS.length;
+  showSection(SLIDESHOW_SECTIONS[slideshowIdx]);
+  renderSlideshowDots();
+}
+
+function startSlideshow(){
+  document.body.classList.add('slideshow-mode');
+  slideshowIdx = 0;
+  slideshowGoTo(0);
+  if (slideshowTimer) clearInterval(slideshowTimer);
+  slideshowTimer = setInterval(()=>slideshowGoTo(slideshowIdx+1), SLIDESHOW_SECONDS*1000);
+  // Best-effort fullscreen for TV/projector mirroring — silently ignored where unsupported (e.g. iPhone Safari)
+  try {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  } catch(e){}
+}
+
+function stopSlideshow(){
+  document.body.classList.remove('slideshow-mode');
+  if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer=null; }
+  try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{}); } catch(e){}
+  showSection('home');
+}
+
+document.addEventListener('keydown', e=>{
+  if (document.body.classList.contains('slideshow-mode') && e.key==='Escape') stopSlideshow();
+});
 
 startListening();
 setTimeout(hideLoader, 8000); // safety fallback in case of an unexpected error

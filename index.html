@@ -151,7 +151,7 @@
   .record-mini .rm .n { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; }
   .record-mini .rm .l { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; }
   .card-actions { position:absolute; top:14px; right:14px; display:flex; gap:6px; }
-  .icon-btn { width:26px; height:26px; border-radius:7px; border:1px solid var(--border); background:var(--bg3); color:var(--text3); font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn { width:26px; height:26px; border-radius:7px; border:1px solid var(--border); background:var(--bg3); color:var(--text3); font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
   .icon-btn:hover { color:var(--text); border-color:var(--border2); }
 
   .empty-state { text-align:center; padding:50px 20px; color:var(--text3); }
@@ -165,12 +165,12 @@
   .ev-info { flex:1; min-width:0; }
   .ev-title { font-weight:600; font-size:14.5px; }
   .ev-meta { font-size:12px; color:var(--text3); margin-top:2px; }
-  .ev-cat { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; padding:3px 9px; border-radius:6px; white-space:nowrap; }
+  .ev-cat { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; padding:3px 9px; border-radius:6px; white-space:nowrap; flex-shrink:0; }
   .cat-sports { background:rgba(96,165,250,0.16); color:#60a5fa; }
   .cat-clubs { background:rgba(167,139,250,0.16); color:#a78bfa; }
   .cat-school { background:rgba(217,161,37,0.16); color:var(--gold-light); }
   .cat-lunch { background:rgba(74,222,128,0.16); color:#4ade80; }
-  .home-badge, .away-badge { font-size:10px; font-weight:700; letter-spacing:1px; padding:3px 9px; border-radius:6px; text-transform:uppercase; }
+  .home-badge, .away-badge { font-size:10px; font-weight:700; letter-spacing:1px; padding:3px 9px; border-radius:6px; text-transform:uppercase; flex-shrink:0; }
   .home-badge { background:rgba(74,222,128,0.14); color:#4ade80; }
   .away-badge { background:rgba(138,145,153,0.18); color:var(--gray-light); }
 
@@ -633,7 +633,14 @@
       <div class="field"><label>Date</label><input id="fg-date" type="date" /></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Time</label><input id="fg-time" type="time" /></div>
+      <div class="field">
+        <label>Time</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="fg-time" type="time" style="flex:1" />
+          <span style="opacity:.6">–</span>
+          <input id="fg-time-end" type="time" style="flex:1" />
+        </div>
+      </div>
       <div class="field"><label>Home / Away</label><select id="fg-ha"><option value="Home">Home</option><option value="Away">Away</option></select></div>
     </div>
     <div class="field"><label>Location</label><input id="fg-loc" placeholder="e.g. RMS Gym" /></div>
@@ -707,7 +714,14 @@
     <div class="field"><label>Title</label><input id="fe-title" placeholder="e.g. Fall Choir Concert" /></div>
     <div class="field-row">
       <div class="field"><label>Date</label><input id="fe-date" type="date" /></div>
-      <div class="field"><label>Time</label><input id="fe-time" type="time" /></div>
+      <div class="field">
+        <label>Time</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="fe-time" type="time" style="flex:1" />
+          <span style="opacity:.6">–</span>
+          <input id="fe-time-end" type="time" style="flex:1" />
+        </div>
+      </div>
     </div>
     <div class="field"><label>Location</label><input id="fe-loc" placeholder="e.g. RMS Auditorium" /></div>
     <div class="modal-actions">
@@ -1113,7 +1127,7 @@ function renderSports(){
 function openAddGame(teamId){
   document.getElementById('fg-teamid').value = teamId;
   document.getElementById('fg-opp').value='';document.getElementById('fg-date').value='';
-  document.getElementById('fg-time').value='';document.getElementById('fg-loc').value='';
+  document.getElementById('fg-time').value='';document.getElementById('fg-time-end').value='';document.getElementById('fg-loc').value='';
   document.getElementById('fg-us').value='';document.getElementById('fg-them').value='';
   openModal('modal-add-game');
 }
@@ -1164,7 +1178,7 @@ async function addGame(){
   if(!team) return;
   const opp=document.getElementById('fg-opp').value.trim();
   const date=dateInputToLabel(document.getElementById('fg-date').value);
-  const time=timeInputToLabel(document.getElementById('fg-time').value);
+  const time=timeRangeToLabel(document.getElementById('fg-time').value, document.getElementById('fg-time-end').value);
   const ha=document.getElementById('fg-ha').value;
   const loc=document.getElementById('fg-loc').value.trim();
   const usVal=document.getElementById('fg-us').value;
@@ -1851,7 +1865,7 @@ function renderCalendar(){
   }
   const rowHTML = it=>{
     const parts=(it.date||'').split(' ');
-    const catLbl = it.cat==='sports'?'Sports':it.cat==='clubs'?'Club':'School';
+    const catLbl = it.cat==='sports'?'Sports':it.cat==='clubs'?'Club':'Event';
     const catCls = it.cat==='sports'?'cat-sports':it.cat==='clubs'?'cat-clubs':'cat-school';
     return `<div class="event-card">
       <div class="ev-date-block"><div class="ev-month">${parts[0]||''}</div><div class="ev-day">${parts[1]||'—'}</div></div>
@@ -1876,14 +1890,14 @@ function renderCalendar(){
 async function addEvent(){
   const title=document.getElementById('fe-title').value.trim();
   const date=dateInputToLabel(document.getElementById('fe-date').value);
-  const time=timeInputToLabel(document.getElementById('fe-time').value);
+  const time=timeRangeToLabel(document.getElementById('fe-time').value, document.getElementById('fe-time-end').value);
   const loc=document.getElementById('fe-loc').value.trim();
   if(!title||!date) return alert('Please enter a title and date.');
   events.push({id:nextEid++, title, date, time, loc});
   closeModal('modal-add-event');
   ['fe-title','fe-loc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fe-date').value='';
-  document.getElementById('fe-time').value='';
+  document.getElementById('fe-time').value='';document.getElementById('fe-time-end').value='';
   await saveAll(); renderAll();
 }
 async function removeEvent(id){
@@ -2125,7 +2139,7 @@ function renderEventsFitLayer(items, page, totalPages){
   if(!items.length){
     inner = `<div class="slide-empty"><span class="se-icon">📅</span>Nothing scheduled today</div>`;
   } else {
-    const catLbl = c=> c==='sports'?'Sports':c==='clubs'?'Club':'School';
+    const catLbl = c=> c==='sports'?'Sports':c==='clubs'?'Club':'Event';
     const catCls = c=> c==='sports'?'cat-sports':c==='clubs'?'cat-clubs':'cat-school';
     inner = `<div class="slide-events">` + items.map(it=>{
       const meta = [it.loc].filter(Boolean).join(' · ');

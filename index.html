@@ -170,6 +170,11 @@
   .away-badge { background:rgba(138,145,153,0.18); color:var(--gray-light); }
 
   .cal-export-card { background: var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(16px); }
+  .cal-two-col { display:flex; flex-direction:column; gap:20px; }
+  .cal-day-col-title { font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; color:var(--gold-light); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; }
+  body.slideshow-mode .cal-two-col { flex-direction:row; align-items:flex-start; gap:clamp(12px,2.4vh,28px); }
+  body.slideshow-mode .cal-day-col { flex:1; min-width:0; }
+  body.slideshow-mode .cal-day-col-title { font-size:clamp(13px,2.2vh,20px); margin-bottom:clamp(6px,1.4vh,14px); text-align:center; }
   .cal-grid-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; margin-bottom:18px; }
   .cal-grid-header { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; }
   .cal-grid-title { font-family:'Fredoka',sans-serif; font-size:19px; font-weight:700; min-width:150px; text-align:center; }
@@ -248,6 +253,7 @@
   body.slideshow-mode .quicklinks,
   body.slideshow-mode .nextup,
   body.slideshow-mode .cal-export-card,
+  body.slideshow-mode .cal-grid-wrap,
   body.slideshow-mode #menu-pdf-status,
   body.slideshow-mode .hero-sub,
   body.slideshow-mode .section-top p { display:none !important; }
@@ -899,7 +905,12 @@ function showSection(id){
 
 // ── Helpers ──────────────────────────────────────────────────
 function parseGameDate(dateStr){
-  try { const d = new Date(dateStr + ' 2026'); return isNaN(d) ? null : d; } catch(e){ return null; }
+  try {
+    let s = String(dateStr).replace(/(\d+)(st|nd|rd|th)\b/gi, '$1'); // "October 9th" -> "October 9"
+    const hasYear = /\d{4}/.test(s); // don't double up a year if one was already typed
+    const d = new Date(hasYear ? s : s + ' 2026');
+    return isNaN(d) ? null : d;
+  } catch(e){ return null; }
 }
 function parseClockTime(str){
   if(!str) return null;
@@ -1587,6 +1598,7 @@ function isTodayOrTomorrow(dateObj){
 function renderCalendar(){
   renderCalendarGrid();
   const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
   const items = collectCalendarItems().filter(it=>isTodayOrTomorrow(it.dateObj))
     .sort((a,b)=>(a.dateObj||0)-(b.dateObj||0));
   const list = document.getElementById('calendarList');
@@ -1600,18 +1612,25 @@ function renderCalendar(){
     const parts=(it.date||'').split(' ');
     const catLbl = it.cat==='sports'?'Sports':it.cat==='clubs'?'Club':'School';
     const catCls = it.cat==='sports'?'cat-sports':it.cat==='clubs'?'cat-clubs':'cat-school';
-    const dToday = isTodayOrTomorrow(it.dateObj) && new Date(it.dateObj).setHours(0,0,0,0)===today.getTime();
-    const whenLbl = dToday ? 'Today' : 'Tomorrow';
     return `<div class="event-card">
-      <div class="ev-date-block"><div class="ev-month">${whenLbl}</div><div class="ev-day">${parts[1]||'—'}</div></div>
+      <div class="ev-date-block"><div class="ev-month">${parts[0]||''}</div><div class="ev-day">${parts[1]||'—'}</div></div>
       <div class="ev-info"><div class="ev-title">${it.title}</div><div class="ev-meta">${[it.time,it.loc].filter(Boolean).join(' · ')}</div></div>
       <span class="ev-cat ${catCls}">${catLbl}</span>
       ${it.ha?`<span class="${it.ha==='Home'?'home-badge':'away-badge'}">${it.ha}</span>`:''}
       ${it.id!=null?`<button class="icon-btn" onclick="requireAuth(()=>removeEvent(${it.id}))">✕</button>`:''}
     </div>`;
   };
-  list.innerHTML = items.map(rowHTML).join('');
-  homeList.innerHTML = items.map(rowHTML).join('');
+  const buildColumns = ()=>{
+    const todays = items.filter(it=> new Date(it.dateObj).setHours(0,0,0,0)===today.getTime());
+    const tomorrows = items.filter(it=> new Date(it.dateObj).setHours(0,0,0,0)===tomorrow.getTime());
+    const col = (label, arr)=> `<div class="cal-day-col">
+      <div class="cal-day-col-title">${label}</div>
+      ${arr.length ? arr.map(rowHTML).join('') : '<div class="empty-state" style="padding:16px 10px"><p>Nothing scheduled</p></div>'}
+    </div>`;
+    return `<div class="cal-two-col">${col('Today', todays)}${col('Tomorrow', tomorrows)}</div>`;
+  };
+  list.innerHTML = buildColumns();
+  homeList.innerHTML = buildColumns();
 }
 async function addEvent(){
   const title=document.getElementById('fe-title').value.trim();

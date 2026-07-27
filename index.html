@@ -216,13 +216,42 @@
   body.slideshow-mode .sidebar,
   body.slideshow-mode .utility-bar,
   body.slideshow-mode .setup-banner,
-  body.slideshow-mode .btn-primary,
+  body.slideshow-mode .btn,
+  body.slideshow-mode .icon-btn,
   body.slideshow-mode .card-actions,
   body.slideshow-mode .quicklinks,
-  body.slideshow-mode .nextup { display:none !important; }
-  body.slideshow-mode .app-main { padding-bottom:0; }
+  body.slideshow-mode .nextup,
+  body.slideshow-mode .cal-export-card,
+  body.slideshow-mode #menu-pdf-status,
+  body.slideshow-mode .hero-sub,
+  body.slideshow-mode .section-top p { display:none !important; }
+  body.slideshow-mode .app-main { padding-bottom:0; min-height:100vh; display:flex; flex-direction:column; justify-content:center; }
   body.slideshow-mode .section { max-width:1300px; padding-top:8px; }
-  body.slideshow-mode .hero { padding-top:36px; }
+  body.slideshow-mode .hero { padding:28px 24px 20px; }
+  body.slideshow-mode .hero-logo { width:76px; height:76px; }
+  body.slideshow-mode .hero-eyebrow { font-size:13px; letter-spacing:4px; }
+  body.slideshow-mode .hero-title { font-size:clamp(42px,7vw,68px); }
+  body.slideshow-mode .section-top { justify-content:center; text-align:center; margin-bottom:28px; }
+  body.slideshow-mode .section-top h2 { font-size:40px; }
+  body.slideshow-mode .announce-card { padding:24px 28px; }
+  body.slideshow-mode .announce-card h4 { font-size:21px; }
+  body.slideshow-mode .announce-card p { font-size:16px; }
+  body.slideshow-mode .a-date { font-size:13px; }
+  body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:18px 22px; }
+  body.slideshow-mode .ev-title { font-size:18px; }
+  body.slideshow-mode .ev-meta { font-size:14px; }
+  body.slideshow-mode .ev-cat, body.slideshow-mode .home-badge, body.slideshow-mode .away-badge { font-size:11px; padding:5px 12px; }
+  body.slideshow-mode .menu-day { padding:22px; }
+  body.slideshow-mode .menu-day h4 { font-size:21px; margin-bottom:14px; padding-bottom:10px; }
+  body.slideshow-mode .menu-item { font-size:15.5px; margin-bottom:9px; }
+  body.slideshow-mode table { font-size:16px; }
+  body.slideshow-mode th { font-size:12px; padding:16px 18px; }
+  body.slideshow-mode td { padding:16px 18px; }
+  body.slideshow-mode .empty-state { padding:80px 20px; }
+  body.slideshow-mode .empty-state .icon { font-size:48px; }
+  body.slideshow-mode .empty-state p { font-size:16px; }
+  body.slideshow-mode .section.active { animation: slideshowFadeIn 0.7s ease; }
+  @keyframes slideshowFadeIn { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
   .slideshow-exit-btn { position:fixed; top:18px; right:18px; z-index:999; padding:9px 16px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Barlow',sans-serif; font-weight:600; font-size:12px; cursor:pointer; backdrop-filter:blur(10px); display:none; }
   body.slideshow-mode .slideshow-exit-btn { display:block; }
   .slideshow-dots { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:999; display:none; gap:9px; padding:8px 14px; background:rgba(10,24,38,0.7); border:1px solid var(--glass-border); border-radius:20px; backdrop-filter:blur(10px); }
@@ -347,9 +376,27 @@
 <!-- LUNCH -->
 <div class="section" id="sec-lunch">
   <div class="section-top">
-    <div class="section-top-left"><h2>Lunch <span>Menu</span></h2><p id="lunchWeekLabel">This week's menu</p></div>
-    <button class="btn btn-primary" onclick="requireAuth(openEditMenu)">Edit Menu</button>
+    <div class="section-top-left"><h2>Lunch <span>Menu</span></h2><p>Upload the monthly menu PDF and it'll be split into weeks automatically</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-primary" onclick="requireAuth(addBlankWeek)">+ Add Week</button>
+    </div>
   </div>
+
+  <input type="file" id="menu-pdf-input" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event)" />
+  <div id="menu-pdf-status" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(-1)" title="Previous week">‹</button>
+    <div style="flex:1;text-align:center;min-width:150px">
+      <div id="lunchWeekLabel" style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;"></div>
+      <div id="lunchWeekSub" style="font-size:11px;color:var(--text3)"></div>
+    </div>
+    <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(1)" title="Next week">›</button>
+    <button class="btn btn-ghost" onclick="requireAuth(openEditMenu)">✏️ Edit Week</button>
+    <button class="icon-btn" title="Remove this week" onclick="requireAuth(removeCurrentWeek)">✕</button>
+  </div>
+
   <div class="menu-week" id="menuGrid"></div>
 </div>
 
@@ -513,12 +560,12 @@
 
 <div class="modal-bg" id="modal-edit-menu">
   <div class="modal" style="max-width:560px">
-    <h2>Edit Lunch Menu</h2>
-    <div class="field"><label>Week Of</label><input id="fm-weekof" placeholder="e.g. Week of Aug 18" /></div>
+    <h2>Edit Week</h2>
+    <div class="field"><label>Week Label</label><input id="fm-weekof" placeholder="e.g. Week of Sep 2" /></div>
     <div id="menu-edit-days"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-edit-menu')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveMenu()">Save Menu</button>
+      <button class="btn btn-primary" onclick="saveMenu()">Save Week</button>
     </div>
   </div>
 </div>
@@ -541,6 +588,8 @@
 
 <!-- Supabase JS v2 (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- PDF.js (CDN) — used to read the uploaded monthly lunch menu PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
 /*
@@ -621,10 +670,7 @@ const DEFAULT_BELL = [
   {id:7, period:'6th Period', cls:'5', start:'1:35 PM', end:'2:35 PM'},
 ];
 const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
-const DEFAULT_MENU = {
-  weekOf: 'This Week',
-  days: WEEKDAYS.map(d=>({day:d, entree:'', side:'', fruit:'', milk:'White & Chocolate Milk'}))
-};
+const DEFAULT_MENU = { weeks: [] }; // starts empty — upload a monthly PDF or use "+ Add Week"
 const DEFAULT_ANNOUNCEMENTS = [
   {id:1, title:'Welcome Back!', date:'Aug 12', body:'We are excited to kick off the new school year. Check this hub for the latest sports schedules, club meetings, and lunch menus.'}
 ];
@@ -632,6 +678,7 @@ const DEFAULT_EVENTS = [];
 
 // ── In-memory state ──────────────────────────────────────────
 let announcements=[], teams=[], clubs=[], bell=[], events=[], menu=null;
+let currentWeekIdx = 0;
 let nextAid=2, nextTid=4, nextGid=1, nextCid=4, nextPid=8, nextEid=1;
 
 // ── Save to Supabase ─────────────────────────────────────────
@@ -671,11 +718,25 @@ async function resetAllData() {
   );
   if (!sure) return;
   announcements=[]; teams=[]; clubs=[]; bell=[]; events=[];
-  menu = { weekOf:'This Week', days: WEEKDAYS.map(d=>({day:d, entree:'', side:'', fruit:'', milk:'White & Chocolate Milk'})) };
+  menu = { weeks: [] };
+  currentWeekIdx = 0;
   nextAid=1; nextTid=1; nextGid=1; nextCid=1; nextPid=1; nextEid=1;
   await saveAll();
   renderAll();
   setSyncStatus('ok','Live');
+}
+
+// ── Menu data migration (old single-week format → new weeks[] format) ─
+function normalizeMenu(m){
+  if (m && Array.isArray(m.weeks)) return m;
+  if (m && Array.isArray(m.days)) {
+    return { weeks: [{ weekOf: m.weekOf || 'This Week', days: WEEKDAYS.map(dn=>{
+      const old = m.days.find(x=>x.day===dn) || {};
+      const items = [old.entree, old.side, old.fruit, old.milk].filter(Boolean);
+      return {day:dn, date:'', items};
+    })}]};
+  }
+  return { weeks: [] };
 }
 
 // ── Hide loading screen once data is ready ────────────────────
@@ -693,6 +754,7 @@ function applyState(row) {
     bell    = DEFAULT_BELL.map(b=>({...b}));
     events  = DEFAULT_EVENTS.map(e=>({...e}));
     menu    = JSON.parse(JSON.stringify(DEFAULT_MENU));
+    currentWeekIdx = 0;
     nextAid=2; nextTid=4; nextGid=1; nextCid=4; nextPid=8; nextEid=1;
     saveAll();
     renderAll(); hideLoader();
@@ -703,7 +765,8 @@ function applyState(row) {
   clubs   = row.clubs   && row.clubs.length   ? row.clubs   : DEFAULT_CLUBS;
   bell    = row.bell    && row.bell.length    ? row.bell    : DEFAULT_BELL;
   events  = row.events  || [];
-  menu    = row.menu && row.menu.days ? row.menu : JSON.parse(JSON.stringify(DEFAULT_MENU));
+  menu    = normalizeMenu(row.menu);
+  currentWeekIdx = findNearestWeekToToday(menu.weeks);
   if (row.meta) {
     nextAid = row.meta.nextAid || nextAid;
     nextTid = row.meta.nextTid || nextTid;
@@ -925,42 +988,276 @@ async function removeClub(id){
   await saveAll(); renderAll();
 }
 
-// ── Render: Lunch Menu ───────────────────────────────────────
+// ── Render: Lunch Menu (week-navigable) ───────────────────────
 function renderMenu(){
-  document.getElementById('lunchWeekLabel').textContent = menu.weekOf || "This week's menu";
-  document.getElementById('menuGrid').innerHTML = menu.days.map(d=>`
-    <div class="menu-day">
-      <h4>${d.day}</h4>
-      <div class="menu-item"><span class="k">Entrée</span><span>${d.entree||'—'}</span></div>
-      <div class="menu-item"><span class="k">Side</span><span>${d.side||'—'}</span></div>
-      <div class="menu-item"><span class="k">Fruit</span><span>${d.fruit||'—'}</span></div>
-      <div class="menu-item"><span class="k">Drink</span><span>${d.milk||'—'}</span></div>
-    </div>`).join('');
+  const grid = document.getElementById('menuGrid');
+  const labelEl = document.getElementById('lunchWeekLabel');
+  const subEl = document.getElementById('lunchWeekSub');
+  if(!menu.weeks || !menu.weeks.length){
+    grid.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No lunch menu yet.<br>Upload the monthly PDF, or hit "+ Add Week" to enter it by hand.</p></div>';
+    labelEl.textContent='No weeks yet';
+    subEl.textContent='';
+    return;
+  }
+  currentWeekIdx = Math.max(0, Math.min(currentWeekIdx, menu.weeks.length-1));
+  const week = menu.weeks[currentWeekIdx];
+  labelEl.textContent = week.weekOf || ('Week '+(currentWeekIdx+1));
+  subEl.textContent = 'Week '+(currentWeekIdx+1)+' of '+menu.weeks.length;
+  grid.innerHTML = WEEKDAYS.map(dayName=>{
+    const d = (week.days||[]).find(x=>x.day===dayName) || {items:[]};
+    const items = d.items && d.items.length
+      ? d.items.map(it=>`<div class="menu-item"><span>${it}</span></div>`).join('')
+      : '<div class="menu-item" style="color:var(--text3)">—</div>';
+    return `<div class="menu-day"><h4>${dayName}${d.date?' · '+d.date:''}</h4>${items}</div>`;
+  }).join('');
+}
+function shiftWeek(delta){
+  if(!menu.weeks || !menu.weeks.length) return;
+  currentWeekIdx = (currentWeekIdx + delta + menu.weeks.length) % menu.weeks.length;
+  renderMenu();
+}
+async function addBlankWeek(){
+  if(!menu.weeks) menu.weeks=[];
+  menu.weeks.push({weekOf:'New Week', days: WEEKDAYS.map(d=>({day:d, date:'', items:[]}))});
+  currentWeekIdx = menu.weeks.length-1;
+  await saveAll(); renderAll();
+  openEditMenu();
+}
+async function removeCurrentWeek(){
+  if(!menu.weeks || !menu.weeks.length) return;
+  if(!confirm('Remove this week from the lunch menu?')) return;
+  menu.weeks.splice(currentWeekIdx,1);
+  currentWeekIdx = Math.max(0, currentWeekIdx-1);
+  await saveAll(); renderAll();
 }
 function openEditMenu(){
-  document.getElementById('fm-weekof').value = menu.weekOf || '';
-  document.getElementById('menu-edit-days').innerHTML = menu.days.map((d,i)=>`
-    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--gold-light);margin-bottom:8px">${d.day}</div>
-      <div class="field-row">
-        <div class="field"><label>Entrée</label><input data-i="${i}" data-k="entree" value="${d.entree||''}" /></div>
-        <div class="field"><label>Side</label><input data-i="${i}" data-k="side" value="${d.side||''}" /></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Fruit</label><input data-i="${i}" data-k="fruit" value="${d.fruit||''}" /></div>
-        <div class="field"><label>Drink</label><input data-i="${i}" data-k="milk" value="${d.milk||''}" /></div>
-      </div>
-    </div>`).join('');
+  if(!menu.weeks || !menu.weeks.length){ addBlankWeek(); return; }
+  const week = menu.weeks[currentWeekIdx];
+  document.getElementById('fm-weekof').value = week.weekOf || '';
+  document.getElementById('menu-edit-days').innerHTML = WEEKDAYS.map(dayName=>{
+    const d = (week.days||[]).find(x=>x.day===dayName) || {items:[]};
+    return `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--gold-light);margin-bottom:8px">${dayName}</div>
+      <div class="field"><textarea data-day="${dayName}" rows="4" placeholder="One item per line, e.g.&#10;Chicken Nuggets&#10;Corn&#10;Applesauce&#10;Milk">${(d.items||[]).join('\n')}</textarea></div>
+    </div>`;
+  }).join('');
   openModal('modal-edit-menu');
 }
 async function saveMenu(){
-  menu.weekOf = document.getElementById('fm-weekof').value.trim() || 'This Week';
-  document.querySelectorAll('#menu-edit-days input').forEach(inp=>{
-    const i = parseInt(inp.dataset.i,10); const k = inp.dataset.k;
-    menu.days[i][k] = inp.value.trim();
+  if(!menu.weeks || !menu.weeks.length) return;
+  const week = menu.weeks[currentWeekIdx];
+  week.weekOf = document.getElementById('fm-weekof').value.trim() || week.weekOf || 'Week';
+  week.days = week.days || WEEKDAYS.map(d=>({day:d, date:'', items:[]}));
+  document.querySelectorAll('#menu-edit-days textarea').forEach(ta=>{
+    const dayName = ta.dataset.day;
+    const items = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    let d = week.days.find(x=>x.day===dayName);
+    if(!d){ d={day:dayName, date:'', items:[]}; week.days.push(d); }
+    d.items = items;
   });
   closeModal('modal-edit-menu');
   await saveAll(); renderAll();
+}
+function findNearestWeekToToday(weeks){
+  if(!weeks || !weeks.length) return 0;
+  const today = new Date();
+  let bestIdx=0, bestDiff=Infinity;
+  weeks.forEach((w,i)=>{
+    const withDate = (w.days||[]).find(d=>d.date);
+    if(!withDate) return;
+    const d = new Date(withDate.date+' '+today.getFullYear());
+    if(isNaN(d)) return;
+    const diff = Math.abs(d-today);
+    if(diff<bestDiff){ bestDiff=diff; bestIdx=i; }
+  });
+  return bestIdx;
+}
+
+// ── PDF menu upload + parsing engine ───────────────────────────
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+const WEEKDAY_NAMES = {monday:'Monday',mon:'Monday',tuesday:'Tuesday',tue:'Tuesday',tues:'Tuesday',
+  wednesday:'Wednesday',wed:'Wednesday',thursday:'Thursday',thu:'Thursday',thur:'Thursday',thurs:'Thursday',
+  friday:'Friday',fri:'Friday'};
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+async function extractPdfItems(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  let items = [];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    content.items.forEach(it=>{
+      const str = (it.str||'').trim();
+      if(!str) return;
+      const x = it.transform[4], y = it.transform[5];
+      items.push({text:str, x, y, gy: -(p-1)*1e6 + y});
+    });
+  }
+  return items;
+}
+function detectMonthYear(items){
+  const fullText = items.map(i=>i.text).join(' ');
+  const re = new RegExp('('+MONTH_NAMES.join('|')+')\\s+(\\d{4})','i');
+  const m = fullText.match(re);
+  return m ? {month:m[1], year:m[2]} : null;
+}
+function monthAbbrev(name){ return name ? name.slice(0,3) : ''; }
+function clusterLines(items, tol){
+  const sorted=[...items].sort((a,b)=>b.gy-a.gy);
+  const lines=[];
+  sorted.forEach(it=>{
+    let line = lines.find(l=>Math.abs(l.gy-it.gy)<=tol);
+    if(!line){ line={gy:it.gy, items:[it]}; lines.push(line); }
+    else { line.items.push(it); }
+  });
+  lines.forEach(l=>{ l.items.sort((a,b)=>a.x-b.x); });
+  lines.sort((a,b)=>b.gy-a.gy);
+  return lines;
+}
+function clusterBands(lines){
+  if(!lines.length) return [];
+  const gaps=[];
+  for(let i=1;i<lines.length;i++) gaps.push(lines[i-1].gy-lines[i].gy);
+  gaps.sort((a,b)=>a-b);
+  const median = gaps.length ? gaps[Math.floor(gaps.length/2)] : 12;
+  const threshold = Math.max(median*1.8, median+8, 18);
+  const bands=[]; let cur=[lines[0]];
+  for(let i=1;i<lines.length;i++){
+    if((lines[i-1].gy-lines[i].gy) > threshold){ bands.push(cur); cur=[]; }
+    cur.push(lines[i]);
+  }
+  if(cur.length) bands.push(cur);
+  return bands;
+}
+function findWeekdayHeader(items){
+  const matches = items.filter(it=> WEEKDAY_NAMES[it.text.replace(/\.$/,'').toLowerCase()]);
+  if(matches.length<3) return null;
+  const byRow = {};
+  matches.forEach(m=>{ const key=Math.round(m.gy/4)*4; (byRow[key]=byRow[key]||[]).push(m); });
+  let bestKey=null, bestCount=0;
+  Object.keys(byRow).forEach(k=>{ if(byRow[k].length>bestCount){ bestCount=byRow[k].length; bestKey=k; } });
+  if(bestKey===null || bestCount<3) return null;
+  const headerItems = byRow[bestKey].sort((a,b)=>a.x-b.x);
+  return {
+    gy: parseFloat(bestKey),
+    cols: headerItems.map(h=>({ name: WEEKDAY_NAMES[h.text.replace(/\.$/,'').toLowerCase()], x:h.x }))
+  };
+}
+function nearestColIdx(x, cols){
+  let best=0, bestDist=Infinity;
+  cols.forEach((c,i)=>{ const d=Math.abs(x-c.x); if(d<bestDist){ bestDist=d; best=i; } });
+  return best;
+}
+// Grid-style monthly calendar (Mon–Fri columns, one row band per week)
+function parseGridStyle(items){
+  const header = findWeekdayHeader(items);
+  if(!header) return [];
+  const monthYear = detectMonthYear(items);
+  const below = items.filter(it=> it.gy < header.gy - 2);
+  const lines = clusterLines(below, 4);
+  const bands = clusterBands(lines);
+  const weeks = [];
+  bands.forEach(bandLines=>{
+    const cellsByCol = header.cols.map(()=>[]);
+    bandLines.forEach(line=>{
+      line.items.forEach(it=>{
+        const idx = nearestColIdx(it.x, header.cols);
+        cellsByCol[idx].push(it.text);
+      });
+    });
+    const days = header.cols.map((c,i)=>{
+      let texts = cellsByCol[i];
+      let date = '';
+      if(texts.length && /^\d{1,2}$/.test(texts[0])){
+        const num = texts[0];
+        date = monthYear ? (monthAbbrev(monthYear.month)+' '+num) : num;
+        texts = texts.slice(1);
+      }
+      return { day:c.name, date, items:texts.filter(Boolean) };
+    });
+    const filled = days.filter(d=>d.items.length>0 || d.date);
+    if(filled.length>=2){
+      const mon = days.find(d=>d.day==='Monday' && (d.date||d.items.length));
+      const first = days.find(d=>d.date||d.items.length);
+      const label = (mon||first) ? 'Week of '+((mon||first).date||(mon||first).day) : 'Week';
+      weeks.push({ weekOf: label, days });
+    }
+  });
+  return weeks;
+}
+// List-style menu (one line per day, chronological)
+function parseListStyle(items){
+  const lines = clusterLines(items, 4).map(l=>l.items.map(it=>it.text).join(' ').trim()).filter(Boolean);
+  const wdRe = /\b(Monday|Mon|Tuesday|Tue|Tues|Wednesday|Wed|Thursday|Thu|Thur|Thurs|Friday|Fri)\b\.?/i;
+  const dateRe = /\b(\d{1,2})\/(\d{1,2})(?:\/\d{2,4})?\b/;
+  const monthDayRe = new RegExp('\\b('+MONTH_NAMES.join('|')+')\\.?\\s+(\\d{1,2})\\b','i');
+  let days=[], current=null;
+  lines.forEach(text=>{
+    const wdm = text.match(wdRe);
+    const dm = text.match(dateRe);
+    const mdm = text.match(monthDayRe);
+    if(wdm || dm || mdm){
+      if(current && current.items.length) days.push(current);
+      const dayName = wdm ? WEEKDAY_NAMES[wdm[1].toLowerCase()] : null;
+      let dateLabel = '';
+      if(mdm) dateLabel = monthAbbrev(mdm[1])+' '+mdm[2];
+      else if(dm) dateLabel = dm[1]+'/'+dm[2];
+      current = { day:dayName, date:dateLabel, items:[] };
+      let rest = text;
+      if(wdm) rest = rest.replace(wdm[0],'');
+      if(mdm) rest = rest.replace(mdm[0],''); else if(dm) rest = rest.replace(dm[0],'');
+      rest = rest.replace(/^[\s,:\-–]+|[\s,:\-–]+$/g,'').trim();
+      if(rest) current.items.push(rest);
+    } else if(current){
+      current.items.push(text);
+    }
+  });
+  if(current && current.items.length) days.push(current);
+  return days;
+}
+function groupDaysIntoWeeks(dayEntries){
+  const weeks=[]; let cur=[];
+  dayEntries.forEach(d=>{
+    if(d.day==='Monday' && cur.length){ weeks.push(cur); cur=[]; }
+    cur.push(d);
+    if(cur.length===5){ weeks.push(cur); cur=[]; }
+  });
+  if(cur.length) weeks.push(cur);
+  return weeks.map(w=>({ weekOf:'Week of '+(w[0].date||w[0].day||'?'), days:w }));
+}
+async function parsePdfToWeeks(file){
+  if (!window.pdfjsLib) throw new Error('PDF reader failed to load');
+  const items = await extractPdfItems(file);
+  if(!items.length) throw new Error('No readable text in PDF');
+  let weeks = parseGridStyle(items);
+  if(!weeks.length){
+    const dayEntries = parseListStyle(items);
+    if(dayEntries.length) weeks = groupDaysIntoWeeks(dayEntries);
+  }
+  if(!weeks.length) throw new Error('Could not recognize the menu layout');
+  return weeks;
+}
+async function handleMenuPdfUpload(evt){
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if(!file) return;
+  const statusEl = document.getElementById('menu-pdf-status');
+  statusEl.style.display='block';
+  statusEl.textContent='📄 Reading PDF…';
+  try{
+    const weeks = await parsePdfToWeeks(file);
+    menu.weeks = weeks;
+    currentWeekIdx = findNearestWeekToToday(weeks);
+    statusEl.textContent = `✅ Imported ${weeks.length} week${weeks.length!==1?'s':''} from the PDF. Check "Edit Week" and fix anything that came through oddly.`;
+    await saveAll(); renderAll();
+  }catch(err){
+    console.error('PDF parse error:', err);
+    statusEl.textContent = '⚠️ Couldn\'t automatically read that PDF\'s layout. Use "+ Add Week" and "Edit Week" to enter it by hand instead.';
+  }
+  setTimeout(()=>{ statusEl.style.display='none'; }, 10000);
 }
 
 // ── Render: Bell Schedule ────────────────────────────────────

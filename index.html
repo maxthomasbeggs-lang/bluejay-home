@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Raytown Middle School — Hub</title>
+<title>Bluejays Forever</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="RMS Hub" />
+<meta name="apple-mobile-web-app-title" content="Bluejays Forever" />
 <meta name="theme-color" content="#0a1826" />
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
@@ -61,7 +63,7 @@
   .app-main { flex: 1; min-width: 0; }
   .sidebar { width: 220px; flex-shrink: 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; display: flex; flex-direction: column; padding: 22px 14px; gap: 8px; background: var(--glass-bg-strong); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-right: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); z-index: 150; }
   .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 6px 22px; }
-  .sidebar-brand .crest { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, var(--gold-light), var(--gold-dark)); display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:16px; color:#1a1204; flex-shrink:0; }
+  .sidebar-brand .crest { width: 38px; height: 38px; border-radius: 8px; flex-shrink:0; object-fit: cover; box-shadow: 0 0 0 1px var(--glass-border), 0 2px 8px rgba(0,0,0,0.4); }
   .sidebar-brand .brand-text { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; line-height:1.15; letter-spacing:0.5px; }
   .sidebar-brand .brand-text small { display:block; font-family:'Barlow',sans-serif; font-weight:500; font-size:10px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; }
   .sidebar-nav { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y:auto; }
@@ -97,8 +99,9 @@
   .setup-banner ol { padding-left: 18px; margin-top: 8px; }
   .setup-banner li { margin-bottom: 4px; }
 
-  .hero { background: linear-gradient(135deg, var(--hero-grad1) 0%, var(--hero-grad2) 50%, var(--bg) 100%); padding: 56px 24px 40px; text-align: center; position: relative; overflow: hidden; }
+  .hero { background: linear-gradient(135deg, var(--hero-grad1) 0%, var(--hero-grad2) 50%, var(--bg) 100%); padding: 44px 24px 40px; text-align: center; position: relative; overflow: hidden; }
   .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(217,161,37,0.16) 0%, transparent 70%); }
+  .hero-logo { width: 96px; height: 96px; border-radius: 20px; margin: 0 auto 16px; position: relative; box-shadow: 0 0 0 1px var(--glass-border), 0 8px 24px rgba(0,0,0,0.4); }
   .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-light); margin-bottom: 12px; position: relative; }
   .hero-title { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(38px, 7vw, 64px); font-weight: 800; letter-spacing: 1px; line-height: 1; color: var(--text); position: relative; }
   .hero-title span { background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, #fff2 60%, var(--gold) 75%, var(--gold-dark) 100%); background-size: 220% 220%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: sheen-shift 6s ease-in-out infinite; }
@@ -199,6 +202,7 @@
 
   #app-loader { position:fixed; inset:0; background:var(--bg); z-index:900; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; transition:opacity .3s; }
   #app-loader.loader-hidden { opacity:0; pointer-events:none; }
+  #app-loader img { width:72px; height:72px; border-radius:16px; box-shadow: 0 0 0 1px var(--glass-border), 0 8px 24px rgba(0,0,0,0.4); }
   .loader-text { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; letter-spacing:1px; color:var(--text2); }
   .loader-bar { width:140px; height:3px; background:var(--bg3); border-radius:2px; overflow:hidden; }
   .loader-bar::after { content:''; display:block; width:40%; height:100%; background:var(--gold); animation:loading 1s ease-in-out infinite; }
@@ -210,13 +214,14 @@
 <body>
 
 <div id="app-loader">
-  <div class="loader-text">Raytown Middle School</div>
+  <img src="apple-touch-icon.png" alt="Bluejays Forever logo" />
+  <div class="loader-text">Bluejays Forever</div>
   <div class="loader-bar"></div>
 </div>
 
 <div class="app-shell">
 <aside class="sidebar">
-  <div class="sidebar-brand"><div class="crest">RMS</div><div class="brand-text">Raytown Middle<small>School Hub</small></div></div>
+  <div class="sidebar-brand"><img class="crest" src="apple-touch-icon.png" alt="Bluejays Forever logo" /><div class="brand-text">Bluejays<small>Forever</small></div></div>
   <nav class="sidebar-nav">
     <button class="nav-link active" onclick="showSection('home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
     <button class="nav-link" onclick="showSection('announcements')"><span class="nav-icon">📣</span><span class="nav-label">News</span></button>
@@ -268,8 +273,9 @@
 </div>
 
 <div class="hero">
+  <img class="hero-logo" src="apple-touch-icon.png" alt="Bluejays Forever logo" />
   <div class="hero-eyebrow">2026 – 2027 School Year</div>
-  <div class="hero-title">RAYTOWN MIDDLE <span>SCHOOL</span></div>
+  <div class="hero-title">BLUEJAYS <span>FOREVER</span></div>
   <div class="hero-sub">Your one-stop hub for sports schedules, club meetings, the weekly lunch menu, the bell schedule, and everything happening around school.</div>
   <div class="quicklinks">
     <button class="quicklink" onclick="showSection('sports')">🏆 Sports</button>
@@ -356,7 +362,7 @@
       <strong style="color:var(--text2)">Google:</strong> click the button — it downloads the same file <em>and</em> opens Google Calendar's import page for you.
     </p>
     <ol id="cal-steps-google" style="display:none;font-size:12px;color:var(--text2);line-height:1.9;margin:12px 0 0 18px;">
-      <li>A file named <strong>RaytownMS-Calendar.ics</strong> just downloaded to your Downloads folder.</li>
+      <li>A file named <strong>Bluejays-Calendar.ics</strong> just downloaded to your Downloads folder.</li>
       <li>A new tab just opened to Google Calendar's Import &amp; Export page.</li>
       <li>In that tab, click <strong>"Select file from your computer"</strong> and choose the file you just downloaded.</li>
       <li>Choose which calendar to add the events to, then click <strong>Import</strong>.</li>
@@ -511,7 +517,7 @@
 <script>
 /*
 ══════════════════════════════════════════════════════════════
-  🟢 STEP 1 — PASTE YOUR SUPABASE CREDENTIALS HERE
+  🟢 STEP 1 — YOUR SUPABASE CREDENTIALS (already filled in)
   supabase.com → your project → Project Settings → API
 ══════════════════════════════════════════════════════════════ */
 const SUPABASE_CONFIG = {
@@ -545,7 +551,7 @@ CREATE POLICY "allow_all" ON school_state FOR ALL USING (true) WITH CHECK (true)
 ══════════════════════════════════════════════════════════════
   🟢 STEP 3 — SET AN ADMIN PASSWORD
 ══════════════════════════════════════════════════════════════ */
-const ADMIN_PASSWORD = 'WildR12!'; // change this to your own password
+const ADMIN_PASSWORD = 'raytown2026'; // change this to your own password
 
 // ── Init ─────────────────────────────────────────────────────
 let sb = null;
@@ -628,7 +634,7 @@ async function resetAllData() {
   const sure = confirm(
     'This will permanently clear:\n\n' +
     '• Announcements\n' +
-    '• Sports teams &amp; games\n' +
+    '• Sports teams & games\n' +
     '• Clubs\n' +
     '• Lunch menu\n' +
     '• Bell schedule\n' +
@@ -1052,14 +1058,14 @@ function toICSDate(dateObj){
 }
 function buildICS(){
   const items = collectCalendarItems().filter(it=>it.dateObj);
-  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Raytown Middle School//Hub//EN\r\nCALSCALE:GREGORIAN\r\n';
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Bluejays Forever//Hub//EN\r\nCALSCALE:GREGORIAN\r\n';
   items.forEach((it,i)=>{
     const d = new Date(it.dateObj.getTime());
     const t = parseClockTime(it.time);
     if(t) d.setHours(t.h,t.m,0,0); else d.setHours(15,0,0,0);
     const end = new Date(d.getTime()+60*60000);
     ics += 'BEGIN:VEVENT\r\n';
-    ics += 'UID:rms-'+i+'-'+d.getTime()+'@raytown-hub\r\n';
+    ics += 'UID:bj-'+i+'-'+d.getTime()+'@bluejays-forever\r\n';
     ics += 'DTSTAMP:'+toICSDate(new Date())+'\r\n';
     ics += 'DTSTART:'+toICSDate(d)+'\r\n';
     ics += 'DTEND:'+toICSDate(end)+'\r\n';
@@ -1075,7 +1081,7 @@ function downloadScheduleICS(){
   const blob = new Blob([ics], {type:'text/calendar'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'RaytownMS-Calendar.ics';
+  a.href = url; a.download = 'Bluejays-Calendar.ics';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }

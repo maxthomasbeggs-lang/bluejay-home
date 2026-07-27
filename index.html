@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Bluejays Forever" />
 <meta name="theme-color" content="#0a1826" />
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     --gold: #d9a125;
@@ -57,17 +57,17 @@
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
-  body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: 'Fredoka', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
   .app-main { flex: 1; min-width: 0; }
   .sidebar { width: 220px; flex-shrink: 0; position: sticky; top: 0; align-self: flex-start; height: 100vh; display: flex; flex-direction: column; padding: 22px 14px; gap: 8px; background: var(--glass-bg-strong); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-right: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); z-index: 150; }
   .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 6px 22px; }
   .sidebar-brand .crest { width: 38px; height: 38px; border-radius: 8px; flex-shrink:0; object-fit: cover; box-shadow: 0 0 0 1px var(--glass-border), 0 2px 8px rgba(0,0,0,0.4); }
-  .sidebar-brand .brand-text { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; line-height:1.15; letter-spacing:0.5px; }
-  .sidebar-brand .brand-text small { display:block; font-family:'Barlow',sans-serif; font-weight:500; font-size:10px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; }
+  .sidebar-brand .brand-text { font-family:'Fredoka',sans-serif; font-weight:700; font-size:14px; line-height:1.15; letter-spacing:0.5px; }
+  .sidebar-brand .brand-text small { display:block; font-family:'Fredoka',sans-serif; font-weight:500; font-size:10px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; }
   .sidebar-nav { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y:auto; }
-  .nav-link { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; background: transparent; border: none; color: var(--text2); font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%; }
+  .nav-link { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; background: transparent; border: none; color: var(--text2); font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%; }
   .nav-link .nav-icon { font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 26px; border-radius: 14px; transition: background 0.2s ease; flex-shrink: 0; }
   .nav-link:hover { color: var(--text); background: var(--glass-bg); }
   .nav-link.active { color: var(--gold-light); background: transparent; }
@@ -103,12 +103,12 @@
   .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(217,161,37,0.16) 0%, transparent 70%); }
   .hero-logo { width: 96px; height: 96px; border-radius: 20px; margin: 0 auto 16px; position: relative; box-shadow: 0 0 0 1px var(--glass-border), 0 8px 24px rgba(0,0,0,0.4); }
   .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-light); margin-bottom: 12px; position: relative; }
-  .hero-title { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(38px, 7vw, 64px); font-weight: 800; letter-spacing: 1px; line-height: 1; color: var(--text); position: relative; }
+  .hero-title { font-family: 'Fredoka', sans-serif; font-size: clamp(38px, 7vw, 64px); font-weight: 700; letter-spacing: 1px; line-height: 1; color: var(--text); position: relative; }
   .hero-title span { background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 45%, #fff2 60%, var(--gold) 75%, var(--gold-dark) 100%); background-size: 220% 220%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: sheen-shift 6s ease-in-out infinite; }
   @keyframes sheen-shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
   .hero-sub { font-size: 14px; color: var(--text2); margin-top: 14px; position: relative; max-width:560px; margin-left:auto; margin-right:auto; }
   .quicklinks { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:22px; position:relative; }
-  .quicklink { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--glass-bg); border:1px solid var(--glass-border); color:var(--text); font-family:'Barlow',sans-serif; font-weight:600; font-size:13px; cursor:pointer; backdrop-filter:blur(12px); transition:all .15s; }
+  .quicklink { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--glass-bg); border:1px solid var(--glass-border); color:var(--text); font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; cursor:pointer; backdrop-filter:blur(12px); transition:all .15s; }
   .quicklink:hover { background:var(--glass-bg-strong); transform:translateY(-1px); }
 
   .nextup { display:flex; align-items:center; gap:12px; justify-content:center; flex-wrap:wrap; background:linear-gradient(90deg, rgba(217,161,37,0.16), rgba(217,161,37,0.06)); border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border); padding:10px 20px; font-size:13px; }
@@ -119,11 +119,11 @@
   .section { display:none; padding: 28px 24px 40px; max-width: 1100px; margin: 0 auto; }
   .section.active { display:block; }
   .section-top { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
-  .section-top h2 { font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700; letter-spacing:0.5px; }
+  .section-top h2 { font-family:'Fredoka',sans-serif; font-size:30px; font-weight:700; letter-spacing:0.5px; }
   .section-top h2 span { color: var(--gold-light); }
   .section-top p { color:var(--text3); font-size:13px; margin-top:2px; }
 
-  .btn { padding:9px 16px; border-radius:10px; font-family:'Barlow',sans-serif; font-weight:600; font-size:13px; cursor:pointer; border:1px solid transparent; transition:all .15s; white-space:nowrap; }
+  .btn { padding:9px 16px; border-radius:10px; font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; cursor:pointer; border:1px solid transparent; transition:all .15s; white-space:nowrap; }
   .btn-primary { background: linear-gradient(135deg, var(--gold-light), var(--gold)); color:#1a1204; }
   .btn-primary:hover { filter:brightness(1.08); transform:translateY(-1px); }
   .btn-ghost { background: var(--glass-bg); border-color: var(--glass-border); color: var(--text2); }
@@ -132,18 +132,18 @@
   .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:20px; }
   .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
   .stat-box .lbl { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
-  .stat-box .val { font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; }
+  .stat-box .val { font-family:'Fredoka',sans-serif; font-size:26px; font-weight:700; }
 
   .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; }
   .info-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; position:relative; }
   .info-card .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px; padding-right:78px; }
-  .info-card h3 { font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:700; letter-spacing:0.3px; }
+  .info-card h3 { font-family:'Fredoka',sans-serif; font-size:19px; font-weight:700; letter-spacing:0.3px; }
   .info-card .tag { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 9px; border-radius:6px; background:rgba(217,161,37,0.16); color:var(--gold-light); white-space:nowrap; }
   .info-card .meta-row { font-size:12.5px; color:var(--text2); margin-top:3px; display:flex; align-items:center; gap:6px; }
   .info-card .desc { font-size:12.5px; color:var(--text3); margin-top:10px; line-height:1.6; }
   .info-card .record-mini { display:flex; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
   .record-mini .rm { text-align:center; }
-  .record-mini .rm .n { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; }
+  .record-mini .rm .n { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; }
   .record-mini .rm .l { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; }
   .card-actions { position:absolute; top:14px; right:14px; display:flex; gap:6px; }
   .icon-btn { width:26px; height:26px; border-radius:7px; border:1px solid var(--border); background:var(--bg3); color:var(--text3); font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
@@ -156,7 +156,7 @@
   .event-card, .game-row { display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; }
   .ev-date-block { width:52px; flex-shrink:0; text-align:center; background:var(--bg3); border-radius:8px; padding:6px 0; }
   .ev-month { font-size:10px; color:var(--gold-light); text-transform:uppercase; font-weight:700; letter-spacing:1px; }
-  .ev-day { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; line-height:1; }
+  .ev-day { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; line-height:1; }
   .ev-info { flex:1; min-width:0; }
   .ev-title { font-weight:600; font-size:14.5px; }
   .ev-meta { font-size:12px; color:var(--text3); margin-top:2px; }
@@ -164,6 +164,7 @@
   .cat-sports { background:rgba(96,165,250,0.16); color:#60a5fa; }
   .cat-clubs { background:rgba(167,139,250,0.16); color:#a78bfa; }
   .cat-school { background:rgba(217,161,37,0.16); color:var(--gold-light); }
+  .cat-lunch { background:rgba(74,222,128,0.16); color:#4ade80; }
   .home-badge, .away-badge { font-size:10px; font-weight:700; letter-spacing:1px; padding:3px 9px; border-radius:6px; text-transform:uppercase; }
   .home-badge { background:rgba(74,222,128,0.14); color:#4ade80; }
   .away-badge { background:rgba(138,145,153,0.18); color:var(--gray-light); }
@@ -171,10 +172,12 @@
   .cal-export-card { background: var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(16px); }
   .cal-grid-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; margin-bottom:18px; }
   .cal-grid-header { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; }
-  .cal-grid-title { font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:700; min-width:150px; text-align:center; }
+  .cal-grid-title { font-family:'Fredoka',sans-serif; font-size:19px; font-weight:700; min-width:150px; text-align:center; }
   .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
   .cal-dow { text-align:center; font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; padding-bottom:6px; }
-  .cal-day { aspect-ratio:1; border-radius:8px; background:var(--bg3); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:6px 2px 4px; position:relative; }
+  .cal-day { aspect-ratio:1; border-radius:8px; background:var(--bg3); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:6px 2px 4px; position:relative; cursor:pointer; transition:background .15s; }
+  .cal-day:not(.empty):hover { background:var(--surface2); }
+  .cal-day.selected { box-shadow:0 0 0 2px var(--gold-light); }
   .cal-day.today { background:rgba(217,161,37,0.16); box-shadow:0 0 0 1px rgba(217,161,37,0.45); }
   .cal-day.empty { background:transparent; }
   .cal-day .dnum { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:4px; }
@@ -200,7 +203,7 @@
   .btn-danger-ghost { background:rgba(248,113,113,0.1); border-color:rgba(248,113,113,0.35); color:#f87171; }
   .btn-danger-ghost:hover { background:rgba(248,113,113,0.18); }
   .menu-day { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; }
-  .menu-day h4 { font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; color:var(--gold-light); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .menu-day h4 { font-family:'Fredoka',sans-serif; font-size:17px; font-weight:700; color:var(--gold-light); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
   .menu-item { font-size:12.5px; color:var(--text2); margin-bottom:5px; display:flex; gap:6px; }
   .menu-item .k { color:var(--text3); min-width:44px; flex-shrink:0; }
 
@@ -213,12 +216,12 @@
   .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px); z-index:500; align-items:center; justify-content:center; padding:20px; }
   .modal-bg.show { display:flex; }
   .modal { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:24px; width:100%; max-width:460px; max-height:88vh; overflow-y:auto; }
-  .modal h2 { font-family:'Barlow Condensed',sans-serif; font-size:22px; margin-bottom:16px; }
+  .modal h2 { font-family:'Fredoka',sans-serif; font-size:22px; margin-bottom:16px; }
   .field { margin-bottom:14px; }
   .field-row { display:flex; gap:12px; }
   .field-row .field { flex:1; }
   .field label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--text3); margin-bottom:6px; }
-  .field input, .field select, .field textarea { width:100%; padding:10px 12px; border-radius:8px; background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:'Barlow',sans-serif; font-size:13.5px; }
+  .field input, .field select, .field textarea { width:100%; padding:10px 12px; border-radius:8px; background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:'Fredoka',sans-serif; font-size:13.5px; }
   .field textarea { resize:vertical; min-height:70px; }
   .field input:focus, .field select:focus, .field textarea:focus { outline:none; border-color:var(--gold); }
   .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
@@ -226,7 +229,7 @@
   #app-loader { position:fixed; inset:0; background:var(--bg); z-index:900; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; transition:opacity .3s; }
   #app-loader.loader-hidden { opacity:0; pointer-events:none; }
   #app-loader img { width:72px; height:72px; border-radius:16px; box-shadow: 0 0 0 1px var(--glass-border), 0 8px 24px rgba(0,0,0,0.4); }
-  .loader-text { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; letter-spacing:1px; color:var(--text2); }
+  .loader-text { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; letter-spacing:1px; color:var(--text2); }
   .loader-bar { width:140px; height:3px; background:var(--bg3); border-radius:2px; overflow:hidden; }
   .loader-bar::after { content:''; display:block; width:40%; height:100%; background:var(--gold); animation:loading 1s ease-in-out infinite; }
   @keyframes loading { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
@@ -234,7 +237,7 @@
   @media (max-width:600px){ .field-row{flex-direction:column} .section{padding:20px 14px 40px} }
 
   /* ── Slideshow mode ─────────────────────────────────────── */
-  .slideshow-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gold-light); background:rgba(217,161,37,0.1); border:1px solid rgba(217,161,37,0.3); border-radius:6px; cursor:pointer; font-family:'Barlow',sans-serif; width:100%; transition:all 0.15s; }
+  .slideshow-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gold-light); background:rgba(217,161,37,0.1); border:1px solid rgba(217,161,37,0.3); border-radius:6px; cursor:pointer; font-family:'Fredoka',sans-serif; width:100%; transition:all 0.15s; }
   .slideshow-btn:hover { background:rgba(217,161,37,0.18); }
   body.slideshow-mode .sidebar,
   body.slideshow-mode .utility-bar,
@@ -307,11 +310,13 @@
     body.slideshow-mode .empty-state { padding:30px 16px; }
     body.slideshow-mode .empty-state .icon { font-size:26px; }
     body.slideshow-mode .empty-state p { font-size:12px; }
-    .slideshow-exit-btn { top:6px; right:6px; padding:6px 12px; font-size:10.5px; }
+    .slideshow-controls { top:6px; right:6px; gap:6px; }
+    .slideshow-ctrl-btn { padding:6px 12px; font-size:10.5px; }
     .slideshow-dots { bottom:6px; padding:5px 10px; }
   }
-  .slideshow-exit-btn { position:fixed; top:18px; right:18px; z-index:999; padding:9px 16px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Barlow',sans-serif; font-weight:600; font-size:12px; cursor:pointer; backdrop-filter:blur(10px); display:none; }
-  body.slideshow-mode .slideshow-exit-btn { display:block; }
+  .slideshow-controls { position:fixed; top:18px; right:18px; z-index:999; display:none; gap:8px; }
+  body.slideshow-mode .slideshow-controls { display:flex; }
+  .slideshow-ctrl-btn { padding:9px 16px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12px; cursor:pointer; backdrop-filter:blur(10px); }
   .slideshow-dots { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:999; display:none; gap:9px; padding:8px 14px; background:rgba(10,24,38,0.7); border:1px solid var(--glass-border); border-radius:20px; backdrop-filter:blur(10px); }
   body.slideshow-mode .slideshow-dots { display:flex; }
   .slideshow-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.25); transition:all 0.2s; }
@@ -343,7 +348,7 @@
       🖥️ Slideshow Mode
     </button>
     <button id="reset-data-btn" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
-      style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Barlow',sans-serif;transition:all 0.15s;width:100%;">
+      style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Fredoka',sans-serif;transition:all 0.15s;width:100%;">
       Reset Data
     </button>
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--text3)" title="Supabase sync status">
@@ -358,7 +363,7 @@
 <div class="utility-bar">
   <button class="slideshow-btn" style="width:auto" onclick="startSlideshow()" title="Screen mirroring slideshow">🖥️ Slideshow</button>
   <button onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
-    style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Barlow',sans-serif;">
+    style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Fredoka',sans-serif;">
     Reset Data
   </button>
   <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)" title="Supabase sync status">
@@ -447,7 +452,7 @@
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
     <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(-1)" title="Previous week">‹</button>
     <div style="flex:1;text-align:center;min-width:150px">
-      <div id="lunchWeekLabel" style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;"></div>
+      <div id="lunchWeekLabel" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
       <div id="lunchWeekSub" style="font-size:11px;color:var(--text3)"></div>
     </div>
     <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(1)" title="Next week">›</button>
@@ -493,6 +498,10 @@
       <span><span class="cal-dot clubs"></span> Clubs</span>
       <span><span class="cal-dot lunch"></span> Lunch</span>
     </div>
+    <div id="calDayDetails" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div id="calDayDetailsTitle" style="font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;"></div>
+      <div id="calDayDetailsList"></div>
+    </div>
   </div>
 
   <div class="cal-export-card" style="border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:16px;">
@@ -526,7 +535,10 @@
 </div><!-- /app-main -->
 </div><!-- /app-shell -->
 
-<button class="slideshow-exit-btn" onclick="stopSlideshow()">✕ Exit Slideshow</button>
+<div class="slideshow-controls">
+  <button class="slideshow-ctrl-btn" id="slideshow-mute-btn" onclick="toggleSlideshowMute()" title="Mute/unmute the background music">🔊</button>
+  <button class="slideshow-ctrl-btn" onclick="stopSlideshow()">✕ Exit Slideshow</button>
+</div>
 <div class="slideshow-dots" id="slideshow-dots"></div>
 
 
@@ -1407,6 +1419,7 @@ async function removePeriod(id){
 // ── Combined Calendar (games + events) ───────────────────────
 // ── Month calendar grid (news, sports, clubs, lunch) ───────────
 let calViewYear, calViewMonth;
+let selectedCalDay = null;
 const WD_INDEX = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
 function weekdayFromDayString(str){
   if(!str) return null;
@@ -1446,6 +1459,63 @@ function getMonthMarkers(year, month){
   });
   return markers;
 }
+// Full event details (not just category dots) for one specific calendar day — powers the
+// click-to-see-details panel below the grid.
+function getDayDetails(year, month, day){
+  const results = [];
+  collectCalendarItems().forEach(it=>{
+    if(it.dateObj && it.dateObj.getFullYear()===year && it.dateObj.getMonth()===month && it.dateObj.getDate()===day){
+      results.push({ cat: it.cat==='sports' ? 'sports':'news', title: it.title, meta:[it.time,it.loc].filter(Boolean).join(' · ') });
+    }
+  });
+  announcements.forEach(a=>{
+    const d = parseGameDate(a.date);
+    if(d && d.getFullYear()===year && d.getMonth()===month && d.getDate()===day){
+      results.push({ cat:'news', title:a.title, meta: a.body ? (a.body.length>90 ? a.body.slice(0,90)+'…' : a.body) : '' });
+    }
+  });
+  (menu.weeks||[]).forEach(w=>{
+    (w.days||[]).forEach(d=>{
+      if(!d.date || !d.items || !d.items.length) return;
+      const dt = parseMenuDate(d.date);
+      if(dt && dt.getFullYear()===year && dt.getMonth()===month && dt.getDate()===day){
+        results.push({ cat:'lunch', title:'Lunch: '+d.items.join(', '), meta:d.day });
+      }
+    });
+  });
+  clubs.forEach(c=>{
+    const wd = weekdayFromDayString(c.day);
+    if(wd && WD_INDEX[wd]===new Date(year,month,day).getDay()){
+      results.push({ cat:'clubs', title:c.name, meta:[c.time,c.room].filter(Boolean).join(' · ') });
+    }
+  });
+  return results;
+}
+function selectCalDay(day){
+  selectedCalDay = (selectedCalDay===day) ? null : day; // click again to deselect
+  renderCalendarGrid();
+}
+function renderCalDayDetails(){
+  const wrap = document.getElementById('calDayDetails');
+  if(!wrap) return;
+  if(selectedCalDay==null){ wrap.style.display='none'; return; }
+  const details = getDayDetails(calViewYear, calViewMonth, selectedCalDay);
+  const dateLabel = new Date(calViewYear, calViewMonth, selectedCalDay).toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+  document.getElementById('calDayDetailsTitle').textContent = dateLabel;
+  const listEl = document.getElementById('calDayDetailsList');
+  if(!details.length){
+    listEl.innerHTML = '<p style="font-size:12.5px;color:var(--text3)">Nothing scheduled this day.</p>';
+  } else {
+    const catLbl = {sports:'Sports',clubs:'Club',lunch:'Lunch',news:'News'};
+    const catCls = {sports:'cat-sports',clubs:'cat-clubs',lunch:'cat-lunch',news:'cat-school'};
+    listEl.innerHTML = details.map(d=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span class="ev-cat ${catCls[d.cat]}" style="flex-shrink:0;margin-top:1px">${catLbl[d.cat]}</span>
+        <div><div style="font-size:13px;font-weight:600">${d.title}</div>${d.meta?`<div style="font-size:11.5px;color:var(--text3);margin-top:2px">${d.meta}</div>`:''}</div>
+      </div>`).join('');
+  }
+  wrap.style.display='block';
+}
 function initCalendarViewIfNeeded(){
   if(calViewYear==null){
     const t = new Date();
@@ -1458,6 +1528,7 @@ function shiftCalMonth(delta){
   calViewMonth += delta;
   if(calViewMonth<0){ calViewMonth=11; calViewYear--; }
   if(calViewMonth>11){ calViewMonth=0; calViewYear++; }
+  selectedCalDay = null;
   renderCalendarGrid();
 }
 function renderCalendarGrid(){
@@ -1476,10 +1547,12 @@ function renderCalendarGrid(){
   for(let d=1; d<=daysInMonth; d++){
     const cats = markers[d] ? Array.from(markers[d]) : [];
     const dots = cats.map(c=>`<span class="cal-dot ${c}"></span>`).join('');
-    cells += `<div class="cal-day${isToday(d)?' today':''}"><div class="dnum">${d}</div><div class="cal-dots">${dots}</div></div>`;
+    const cls = 'cal-day'+(isToday(d)?' today':'')+(selectedCalDay===d?' selected':'');
+    cells += `<div class="${cls}" onclick="selectCalDay(${d})"><div class="dnum">${d}</div><div class="cal-dots">${dots}</div></div>`;
   }
   body.innerHTML = cells;
   titleEl.textContent = first.toLocaleDateString('en-US',{month:'long', year:'numeric'});
+  renderCalDayDetails();
 }
 function collectCalendarItems(){
   const items = [];
@@ -1627,7 +1700,7 @@ function renderAll(){
 
 // ── Slideshow mode (for Chromebook / iPhone screen mirroring) ─
 const SLIDESHOW_SECTIONS = ['home','announcements','calendar','lunch','bell'];
-const SLIDESHOW_SECONDS = 12;
+const SLIDESHOW_SECONDS = 7;
 let slideshowTimer = null;
 let slideshowIdx = 0;
 
@@ -1643,12 +1716,72 @@ function slideshowGoTo(i){
   renderSlideshowDots();
 }
 
+// ── Gentle morning tune (synthesized — no external audio files needed) ──
+const PENTA = { C5:523.25, D5:587.33, E5:659.25, G5:783.99, A5:880.00, C6:1046.50, D6:1174.66, E6:1318.51 };
+const MORNING_MELODY = [
+  {t:0.0, f:PENTA.C5, d:1.6, v:0.09},
+  {t:0.9, f:PENTA.E5, d:1.4, v:0.07},
+  {t:1.9, f:PENTA.G5, d:1.9, v:0.08},
+  {t:3.3, f:PENTA.D5, d:1.4, v:0.06},
+  {t:4.1, f:PENTA.A5, d:1.7, v:0.08},
+  {t:5.2, f:PENTA.E5, d:1.3, v:0.06},
+  {t:6.0, f:PENTA.C6, d:2.1, v:0.09},
+  {t:7.4, f:PENTA.G5, d:1.6, v:0.05},
+];
+const MORNING_LOOP_SECONDS = 9.2;
+let slideshowAudioCtx = null;
+let slideshowAudioGain = null;
+let slideshowAudioInterval = null;
+let slideshowMuted = false;
+
+function playChime(ctx, dest, freq, startTime, dur, vol){
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(vol, startTime+0.06);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime+dur);
+  osc.connect(gain); gain.connect(dest);
+  osc.start(startTime); osc.stop(startTime+dur+0.1);
+}
+function scheduleMorningLoop(){
+  if(!slideshowAudioCtx) return;
+  const base = slideshowAudioCtx.currentTime + 0.1;
+  MORNING_MELODY.forEach(n=> playChime(slideshowAudioCtx, slideshowAudioGain, n.f, base+n.t, n.d, n.v));
+}
+function startSlideshowMusic(){
+  try{
+    if(!slideshowAudioCtx){
+      slideshowAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      slideshowAudioGain = slideshowAudioCtx.createGain();
+      slideshowAudioGain.gain.value = slideshowMuted ? 0 : 1;
+      slideshowAudioGain.connect(slideshowAudioCtx.destination);
+    }
+    if(slideshowAudioCtx.state==='suspended') slideshowAudioCtx.resume();
+    scheduleMorningLoop();
+    if(slideshowAudioInterval) clearInterval(slideshowAudioInterval);
+    slideshowAudioInterval = setInterval(scheduleMorningLoop, MORNING_LOOP_SECONDS*1000);
+  }catch(e){ console.warn('Slideshow music unavailable:', e); }
+}
+function stopSlideshowMusic(){
+  if(slideshowAudioInterval){ clearInterval(slideshowAudioInterval); slideshowAudioInterval=null; }
+  if(slideshowAudioCtx){ try{ slideshowAudioCtx.suspend(); }catch(e){} }
+}
+function toggleSlideshowMute(){
+  slideshowMuted = !slideshowMuted;
+  if(slideshowAudioGain) slideshowAudioGain.gain.value = slideshowMuted ? 0 : 1;
+  const btn = document.getElementById('slideshow-mute-btn');
+  if(btn) btn.textContent = slideshowMuted ? '🔇' : '🔊';
+}
+
 function startSlideshow(){
   document.body.classList.add('slideshow-mode');
   slideshowIdx = 0;
   slideshowGoTo(0);
   if (slideshowTimer) clearInterval(slideshowTimer);
   slideshowTimer = setInterval(()=>slideshowGoTo(slideshowIdx+1), SLIDESHOW_SECONDS*1000);
+  startSlideshowMusic();
   // Best-effort fullscreen for TV/projector mirroring — silently ignored where unsupported (e.g. iPhone Safari)
   try {
     const el = document.documentElement;
@@ -1659,6 +1792,7 @@ function startSlideshow(){
 function stopSlideshow(){
   document.body.classList.remove('slideshow-mode');
   if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer=null; }
+  stopSlideshowMusic();
   try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{}); } catch(e){}
   showSection('home');
 }

@@ -279,37 +279,48 @@
   body.slideshow-mode .section.active { animation: slideshowFadeIn 0.7s ease; }
   @keyframes slideshowFadeIn { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
 
-  /* iPhone in landscape: short viewport height — shrink everything and allow scroll instead of clipping */
+  /* iPhone in landscape: short viewport height — shrink text AND cap item counts so every
+     slide fits without scrolling (a passive kiosk/mirrored display can't be scrolled by anyone) */
   @media (orientation:landscape) and (max-height:500px){
-    body.slideshow-mode .app-main { justify-content:flex-start; overflow-y:auto; padding-top:2px; }
-    body.slideshow-mode .hero { padding:8px 16px 6px; }
-    body.slideshow-mode .hero-logo { width:38px; height:38px; margin-bottom:4px; border-radius:10px; }
-    body.slideshow-mode .hero-eyebrow { font-size:9px; letter-spacing:2px; margin-bottom:2px; }
-    body.slideshow-mode .hero-title { font-size:clamp(18px,4.5vw,26px); }
-    body.slideshow-mode .section { padding-top:4px; padding-bottom:16px; }
-    body.slideshow-mode .section-top { margin-bottom:8px; }
-    body.slideshow-mode .section-top h2 { font-size:19px; }
-    body.slideshow-mode .announce-card { padding:10px 14px; margin-bottom:8px; }
-    body.slideshow-mode .announce-card h4 { font-size:14px; }
-    body.slideshow-mode .announce-card p { font-size:12px; }
-    body.slideshow-mode .a-date { font-size:10.5px; }
-    body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:10px 14px; margin-bottom:6px; }
-    body.slideshow-mode .ev-date-block { width:38px; }
-    body.slideshow-mode .ev-title { font-size:13px; }
-    body.slideshow-mode .ev-meta { font-size:11px; }
+    body.slideshow-mode .app-main { min-height:0; justify-content:flex-start; overflow-y:hidden; padding-top:2px; }
+    body.slideshow-mode .hero { padding:6px 16px 4px; }
+    body.slideshow-mode .hero-logo { width:32px; height:32px; margin-bottom:3px; border-radius:8px; }
+    body.slideshow-mode .hero-eyebrow { font-size:8px; letter-spacing:2px; margin-bottom:2px; }
+    body.slideshow-mode .hero-title { font-size:clamp(16px,4vw,22px); }
+    body.slideshow-mode .section { padding-top:4px; padding-bottom:10px; }
+    body.slideshow-mode .section-top { margin-bottom:6px; }
+    body.slideshow-mode .section-top h2 { font-size:17px; }
+    body.slideshow-mode .announce-card { padding:8px 12px; margin-bottom:6px; }
+    body.slideshow-mode .announce-card h4 { font-size:13px; }
+    body.slideshow-mode .announce-card p { font-size:11px; }
+    body.slideshow-mode .a-date { font-size:10px; }
+    body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:8px 12px; margin-bottom:5px; }
+    body.slideshow-mode .ev-date-block { width:34px; }
+    body.slideshow-mode .ev-title { font-size:12px; }
+    body.slideshow-mode .ev-meta { font-size:10px; }
     body.slideshow-mode .ev-cat, body.slideshow-mode .home-badge, body.slideshow-mode .away-badge { font-size:9px; padding:3px 8px; }
-    body.slideshow-mode .cal-grid-wrap { padding:10px; margin-bottom:10px; }
-    body.slideshow-mode .cal-day .dnum { font-size:9px; }
-    body.slideshow-mode .menu-week { grid-template-columns:repeat(5,1fr); gap:6px; }
-    body.slideshow-mode .menu-day { padding:8px; }
-    body.slideshow-mode .menu-day h4 { font-size:12px; margin-bottom:6px; padding-bottom:5px; }
-    body.slideshow-mode .menu-item { font-size:10px; margin-bottom:3px; }
-    body.slideshow-mode table { font-size:11.5px; }
-    body.slideshow-mode th { font-size:9px; padding:8px 10px; }
-    body.slideshow-mode td { padding:8px 10px; }
-    body.slideshow-mode .empty-state { padding:30px 16px; }
-    body.slideshow-mode .empty-state .icon { font-size:26px; }
-    body.slideshow-mode .empty-state p { font-size:12px; }
+    body.slideshow-mode .cal-grid-wrap { padding:8px; margin-bottom:8px; }
+    body.slideshow-mode .cal-grid { gap:3px; }
+    body.slideshow-mode .cal-day .dnum { font-size:8px; }
+    body.slideshow-mode .cal-dot { width:4px; height:4px; }
+    body.slideshow-mode .cal-legend { margin-top:8px; font-size:9px; gap:10px; }
+    body.slideshow-mode .menu-week { grid-template-columns:repeat(5,1fr); gap:5px; }
+    body.slideshow-mode .menu-day { padding:6px; }
+    body.slideshow-mode .menu-day h4 { font-size:11px; margin-bottom:4px; padding-bottom:4px; }
+    body.slideshow-mode .menu-item { font-size:9px; margin-bottom:2px; }
+    body.slideshow-mode table { font-size:10.5px; }
+    body.slideshow-mode th { font-size:8px; padding:6px 8px; }
+    body.slideshow-mode td { padding:6px 8px; }
+    body.slideshow-mode .empty-state { padding:18px 16px; }
+    body.slideshow-mode .empty-state .icon { font-size:20px; margin-bottom:4px; }
+    body.slideshow-mode .empty-state p { font-size:11px; }
+    /* Cap item counts — guarantees every slide fits rather than relying on shrinking alone */
+    body.slideshow-mode #homeAnnounce .announce-card:nth-child(n+2) { display:none; }
+    body.slideshow-mode #homeUpcoming .event-card:nth-child(n+3) { display:none; }
+    body.slideshow-mode #announceList .announce-card:nth-child(n+4) { display:none; }
+    body.slideshow-mode #calendarList .event-card:nth-child(n+4) { display:none; }
+    body.slideshow-mode .menu-day .menu-item:nth-child(n+5) { display:none; }
+    body.slideshow-mode #bellBody tr:nth-child(n+8) { display:none; }
     .slideshow-controls { top:6px; right:6px; gap:6px; }
     .slideshow-ctrl-btn { padding:6px 12px; font-size:10.5px; }
     .slideshow-dots { bottom:6px; padding:5px 10px; }
@@ -405,7 +416,7 @@
 <div class="section active" id="sec-home">
   <div class="section-top"><div class="section-top-left"><h2>Latest <span>News</span></h2><p>Recent announcements from the office</p></div></div>
   <div id="homeAnnounce"></div>
-  <div class="section-top" style="margin-top:32px"><div class="section-top-left"><h2>Coming <span>Up</span></h2><p>Next few games, meetings &amp; events</p></div></div>
+  <div class="section-top" style="margin-top:32px"><div class="section-top-left"><h2>Coming <span>Up</span></h2><p>Today &amp; tomorrow's games, meetings &amp; events</p></div></div>
   <div id="homeUpcoming"></div>
 </div>
 
@@ -478,7 +489,7 @@
 <!-- CALENDAR -->
 <div class="section" id="sec-calendar">
   <div class="section-top">
-    <div class="section-top-left"><h2>School <span>Calendar</span></h2><p>Games, meetings &amp; special events</p></div>
+    <div class="section-top-left"><h2>School <span>Calendar</span></h2><p>Today &amp; tomorrow's games, meetings &amp; events</p></div>
     <button class="btn btn-primary" onclick="requireAuth(()=>openModal('modal-add-event'))">+ Add Event</button>
   </div>
 
@@ -1599,24 +1610,33 @@ function collectCalendarItems(){
   });
   return items;
 }
+function isTodayOrTomorrow(dateObj){
+  if(!dateObj) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  const d = new Date(dateObj); d.setHours(0,0,0,0);
+  return d.getTime()===today.getTime() || d.getTime()===tomorrow.getTime();
+}
 function renderCalendar(){
   renderCalendarGrid();
   const today = new Date(); today.setHours(0,0,0,0);
-  const items = collectCalendarItems().filter(it=>!it.dateObj || it.dateObj>=today)
+  const items = collectCalendarItems().filter(it=>isTodayOrTomorrow(it.dateObj))
     .sort((a,b)=>(a.dateObj||0)-(b.dateObj||0));
   const list = document.getElementById('calendarList');
   const homeList = document.getElementById('homeUpcoming');
   if(!items.length){
-    list.innerHTML='<div class="empty-state"><div class="icon">📅</div><p>Nothing on the calendar yet.</p></div>';
-    homeList.innerHTML='<div class="empty-state"><div class="icon">📅</div><p>Nothing coming up yet.</p></div>';
+    list.innerHTML='<div class="empty-state"><div class="icon">📅</div><p>Nothing today or tomorrow.</p></div>';
+    homeList.innerHTML='<div class="empty-state"><div class="icon">📅</div><p>Nothing today or tomorrow.</p></div>';
     return;
   }
   const rowHTML = it=>{
     const parts=(it.date||'').split(' ');
     const catLbl = it.cat==='sports'?'Sports':it.cat==='clubs'?'Club':'School';
     const catCls = it.cat==='sports'?'cat-sports':it.cat==='clubs'?'cat-clubs':'cat-school';
+    const dToday = isTodayOrTomorrow(it.dateObj) && new Date(it.dateObj).setHours(0,0,0,0)===today.getTime();
+    const whenLbl = dToday ? 'Today' : 'Tomorrow';
     return `<div class="event-card">
-      <div class="ev-date-block"><div class="ev-month">${parts[0]||''}</div><div class="ev-day">${parts[1]||'—'}</div></div>
+      <div class="ev-date-block"><div class="ev-month">${whenLbl}</div><div class="ev-day">${parts[1]||'—'}</div></div>
       <div class="ev-info"><div class="ev-title">${it.title}</div><div class="ev-meta">${[it.time,it.loc].filter(Boolean).join(' · ')}</div></div>
       <span class="ev-cat ${catCls}">${catLbl}</span>
       ${it.ha?`<span class="${it.ha==='Home'?'home-badge':'away-badge'}">${it.ha}</span>`:''}
@@ -1624,7 +1644,7 @@ function renderCalendar(){
     </div>`;
   };
   list.innerHTML = items.map(rowHTML).join('');
-  homeList.innerHTML = items.slice(0,4).map(rowHTML).join('');
+  homeList.innerHTML = items.map(rowHTML).join('');
 }
 async function addEvent(){
   const title=document.getElementById('fe-title').value.trim();

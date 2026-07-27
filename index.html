@@ -881,8 +881,9 @@ async function startListening() {
 
 // ── Auth gate ────────────────────────────────────────────────
 let pendingAction = null;
+let adminUnlocked = false;
 function requireAuth(fn) {
-  if (sessionStorage.getItem('rms-admin')==='1') { fn(); return; }
+  if (adminUnlocked) { fn(); return; }
   pendingAction = fn;
   openModal('modal-auth');
   setTimeout(()=>document.getElementById('pw-input').focus(),80);
@@ -890,7 +891,7 @@ function requireAuth(fn) {
 function submitPassword() {
   const val = document.getElementById('pw-input').value;
   if (val === ADMIN_PASSWORD) {
-    sessionStorage.setItem('rms-admin','1');
+    adminUnlocked = true;
     document.getElementById('pw-error').style.display='none';
     document.getElementById('pw-input').value='';
     closeModal('modal-auth');

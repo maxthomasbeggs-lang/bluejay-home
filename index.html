@@ -251,80 +251,47 @@
   body.slideshow-mode #menu-pdf-status,
   body.slideshow-mode .hero-sub,
   body.slideshow-mode .section-top p { display:none !important; }
-  body.slideshow-mode .app-main { padding-bottom:0; min-height:100vh; display:flex; flex-direction:column; justify-content:center; }
-  body.slideshow-mode .section { max-width:1300px; padding-top:8px; }
-  body.slideshow-mode .hero { padding:28px 24px 20px; }
-  body.slideshow-mode .hero-logo { width:76px; height:76px; }
-  body.slideshow-mode .hero-eyebrow { font-size:13px; letter-spacing:4px; }
-  body.slideshow-mode .hero-title { font-size:clamp(42px,7vw,68px); }
-  body.slideshow-mode .section-top { justify-content:center; text-align:center; margin-bottom:28px; }
-  body.slideshow-mode .section-top h2 { font-size:40px; }
-  body.slideshow-mode .announce-card { padding:24px 28px; }
-  body.slideshow-mode .announce-card h4 { font-size:21px; }
-  body.slideshow-mode .announce-card p { font-size:16px; }
-  body.slideshow-mode .a-date { font-size:13px; }
-  body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:18px 22px; }
-  body.slideshow-mode .ev-title { font-size:18px; }
-  body.slideshow-mode .ev-meta { font-size:14px; }
-  body.slideshow-mode .ev-cat, body.slideshow-mode .home-badge, body.slideshow-mode .away-badge { font-size:11px; padding:5px 12px; }
-  body.slideshow-mode .menu-day { padding:22px; }
-  body.slideshow-mode .menu-day h4 { font-size:21px; margin-bottom:14px; padding-bottom:10px; }
-  body.slideshow-mode .menu-item { font-size:15.5px; margin-bottom:9px; }
-  body.slideshow-mode table { font-size:16px; }
-  body.slideshow-mode th { font-size:12px; padding:16px 18px; }
-  body.slideshow-mode td { padding:16px 18px; }
-  body.slideshow-mode .empty-state { padding:80px 20px; }
-  body.slideshow-mode .empty-state .icon { font-size:48px; }
-  body.slideshow-mode .empty-state p { font-size:16px; }
+  /* ── Slideshow sizing: fluid, viewport-height-based — scales continuously to ANY screen
+     (phone landscape, Chromebook, TV) instead of jumping between fixed breakpoints.
+     .section gets permanent bottom padding so the fixed dots bar can never overlap content. */
+  body.slideshow-mode .app-main { padding-bottom:0; height:100vh; display:flex; flex-direction:column; justify-content:center; overflow:hidden; }
+  body.slideshow-mode .section { max-width:1300px; width:100%; padding-top:clamp(4px,1vh,10px); padding-bottom:clamp(48px,9vh,64px); box-sizing:border-box; overflow-y:auto; }
+  body.slideshow-mode .hero { padding:clamp(6px,2.2vh,28px) 24px clamp(4px,1.4vh,18px); flex-shrink:0; }
+  body.slideshow-mode .hero-logo { width:clamp(30px,7.5vh,76px); height:clamp(30px,7.5vh,76px); margin-bottom:clamp(2px,0.8vh,10px); }
+  body.slideshow-mode .hero-eyebrow { font-size:clamp(8px,1.3vh,13px); letter-spacing:3px; margin-bottom:clamp(2px,0.6vh,8px); }
+  body.slideshow-mode .hero-title { font-size:clamp(18px,6.5vh,68px); }
+  body.slideshow-mode .section-top { justify-content:center; text-align:center; margin-bottom:clamp(6px,2.5vh,26px); }
+  body.slideshow-mode .section-top h2 { font-size:clamp(16px,3.8vh,38px); }
+  body.slideshow-mode .announce-card { padding:clamp(8px,1.8vh,22px) clamp(12px,2vh,26px); margin-bottom:clamp(6px,1.2vh,12px); }
+  body.slideshow-mode .announce-card h4 { font-size:clamp(13px,2vh,20px); }
+  body.slideshow-mode .announce-card p { font-size:clamp(11px,1.6vh,15px); }
+  body.slideshow-mode .a-date { font-size:clamp(10px,1.3vh,12px); }
+  body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:clamp(8px,1.6vh,16px) clamp(12px,2vh,20px); margin-bottom:clamp(5px,1vh,9px); }
+  body.slideshow-mode .ev-date-block { width:clamp(34px,6vh,50px); }
+  body.slideshow-mode .ev-title { font-size:clamp(12px,1.8vh,17px); }
+  body.slideshow-mode .ev-meta { font-size:clamp(10px,1.4vh,13px); }
+  body.slideshow-mode .ev-cat, body.slideshow-mode .home-badge, body.slideshow-mode .away-badge { font-size:clamp(9px,1.1vh,11px); padding:4px 10px; }
+  body.slideshow-mode .cal-grid-wrap { padding:clamp(8px,1.8vh,18px); margin-bottom:clamp(8px,1.6vh,16px); }
+  body.slideshow-mode .cal-grid-header { margin-bottom:clamp(6px,1.4vh,14px); }
+  body.slideshow-mode .cal-grid-title { font-size:clamp(13px,2vh,19px); }
+  body.slideshow-mode .cal-grid { gap:clamp(3px,0.7vh,5px); }
+  body.slideshow-mode .cal-dow { font-size:clamp(8px,1vh,10px); padding-bottom:clamp(3px,0.7vh,6px); }
+  body.slideshow-mode .cal-day { aspect-ratio:unset; height:clamp(18px,4.2vh,40px); padding:clamp(2px,0.5vh,6px) 2px 3px; }
+  body.slideshow-mode .cal-day .dnum { font-size:clamp(8px,1.1vh,12px); margin-bottom:clamp(1px,0.3vh,4px); }
+  body.slideshow-mode .cal-dot { width:clamp(3px,0.6vh,6px); height:clamp(3px,0.6vh,6px); }
+  body.slideshow-mode .cal-legend { margin-top:clamp(6px,1.4vh,14px); font-size:clamp(8px,1.1vh,11px); gap:clamp(8px,1.6vh,16px); }
+  body.slideshow-mode .menu-week { grid-template-columns:repeat(5,1fr); gap:clamp(4px,1vh,12px); }
+  body.slideshow-mode .menu-day { padding:clamp(8px,1.8vh,16px); }
+  body.slideshow-mode .menu-day h4 { font-size:clamp(12px,1.8vh,17px); margin-bottom:clamp(4px,1vh,10px); padding-bottom:clamp(4px,0.8vh,8px); }
+  body.slideshow-mode .menu-item { font-size:clamp(9.5px,1.4vh,15.5px); margin-bottom:clamp(2px,0.6vh,7px); }
+  body.slideshow-mode table { font-size:clamp(10.5px,1.6vh,16px); }
+  body.slideshow-mode th { font-size:clamp(8px,1.1vh,12px); padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
+  body.slideshow-mode td { padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
+  body.slideshow-mode .empty-state { padding:clamp(18px,4vh,60px) 20px; }
+  body.slideshow-mode .empty-state .icon { font-size:clamp(20px,4vh,40px); }
+  body.slideshow-mode .empty-state p { font-size:clamp(11px,1.6vh,15px); }
   body.slideshow-mode .section.active { animation: slideshowFadeIn 0.7s ease; }
   @keyframes slideshowFadeIn { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
-
-  /* iPhone in landscape: short viewport height — shrink text AND cap item counts so every
-     slide fits without scrolling (a passive kiosk/mirrored display can't be scrolled by anyone) */
-  @media (orientation:landscape) and (max-height:500px){
-    body.slideshow-mode .app-main { min-height:0; justify-content:flex-start; overflow-y:hidden; padding-top:2px; }
-    body.slideshow-mode .hero { padding:6px 16px 4px; }
-    body.slideshow-mode .hero-logo { width:32px; height:32px; margin-bottom:3px; border-radius:8px; }
-    body.slideshow-mode .hero-eyebrow { font-size:8px; letter-spacing:2px; margin-bottom:2px; }
-    body.slideshow-mode .hero-title { font-size:clamp(16px,4vw,22px); }
-    body.slideshow-mode .section { padding-top:4px; padding-bottom:10px; }
-    body.slideshow-mode .section-top { margin-bottom:6px; }
-    body.slideshow-mode .section-top h2 { font-size:17px; }
-    body.slideshow-mode .announce-card { padding:8px 12px; margin-bottom:6px; }
-    body.slideshow-mode .announce-card h4 { font-size:13px; }
-    body.slideshow-mode .announce-card p { font-size:11px; }
-    body.slideshow-mode .a-date { font-size:10px; }
-    body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:8px 12px; margin-bottom:5px; }
-    body.slideshow-mode .ev-date-block { width:34px; }
-    body.slideshow-mode .ev-title { font-size:12px; }
-    body.slideshow-mode .ev-meta { font-size:10px; }
-    body.slideshow-mode .ev-cat, body.slideshow-mode .home-badge, body.slideshow-mode .away-badge { font-size:9px; padding:3px 8px; }
-    body.slideshow-mode .cal-grid-wrap { padding:8px; margin-bottom:8px; }
-    body.slideshow-mode .cal-grid { gap:3px; }
-    body.slideshow-mode .cal-day .dnum { font-size:8px; }
-    body.slideshow-mode .cal-dot { width:4px; height:4px; }
-    body.slideshow-mode .cal-legend { margin-top:8px; font-size:9px; gap:10px; }
-    body.slideshow-mode .menu-week { grid-template-columns:repeat(5,1fr); gap:5px; }
-    body.slideshow-mode .menu-day { padding:6px; }
-    body.slideshow-mode .menu-day h4 { font-size:11px; margin-bottom:4px; padding-bottom:4px; }
-    body.slideshow-mode .menu-item { font-size:9px; margin-bottom:2px; }
-    body.slideshow-mode table { font-size:10.5px; }
-    body.slideshow-mode th { font-size:8px; padding:6px 8px; }
-    body.slideshow-mode td { padding:6px 8px; }
-    body.slideshow-mode .empty-state { padding:18px 16px; }
-    body.slideshow-mode .empty-state .icon { font-size:20px; margin-bottom:4px; }
-    body.slideshow-mode .empty-state p { font-size:11px; }
-    /* Cap item counts — guarantees every slide fits rather than relying on shrinking alone */
-    body.slideshow-mode #homeAnnounce .announce-card:nth-child(n+2) { display:none; }
-    body.slideshow-mode #homeUpcoming .event-card:nth-child(n+3) { display:none; }
-    body.slideshow-mode #announceList .announce-card:nth-child(n+4) { display:none; }
-    body.slideshow-mode #calendarList .event-card:nth-child(n+4) { display:none; }
-    body.slideshow-mode .menu-day .menu-item:nth-child(n+5) { display:none; }
-    body.slideshow-mode #bellBody tr:nth-child(n+8) { display:none; }
-    .slideshow-controls { top:6px; right:6px; gap:6px; }
-    .slideshow-ctrl-btn { padding:6px 12px; font-size:10.5px; }
-    .slideshow-dots { bottom:6px; padding:5px 10px; }
-  }
   .slideshow-controls { position:fixed; top:18px; right:18px; z-index:999; display:none; gap:8px; }
   body.slideshow-mode .slideshow-controls { display:flex; }
   .slideshow-ctrl-btn { padding:9px 16px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12px; cursor:pointer; backdrop-filter:blur(10px); }

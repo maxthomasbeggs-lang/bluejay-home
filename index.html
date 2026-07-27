@@ -940,12 +940,24 @@ function announceCardHTML(a){
     <p>${a.body}</p>
   </div>`;
 }
+// Keeps an announcement visible for 7 days after its date, then it quietly disappears from view
+// (the post itself isn't deleted — it just stops showing). Undated/unparseable dates stay visible.
+function announcementIsFresh(dateStr){
+  if(!dateStr || !/\d/.test(dateStr)) return true; // no day-of-month digit — can't reliably parse, fail open
+  const d = parseGameDate(dateStr);
+  if(!d) return true;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dd = new Date(d); dd.setHours(0,0,0,0);
+  const ageDays = (today - dd) / 86400000;
+  return ageDays <= 7;
+}
 function renderAnnouncements(){
+  const fresh = announcements.filter(a=>announcementIsFresh(a.date));
   const list = document.getElementById('announceList');
-  if(!announcements.length){ list.innerHTML='<div class="empty-state"><div class="icon">📣</div><p>No announcements yet.</p></div>'; }
-  else list.innerHTML = announcements.map(announceCardHTML).join('');
-  document.getElementById('homeAnnounce').innerHTML = announcements.length
-    ? announcements.slice(0,3).map(announceCardHTML).join('')
+  if(!fresh.length){ list.innerHTML='<div class="empty-state"><div class="icon">📣</div><p>No announcements yet.</p></div>'; }
+  else list.innerHTML = fresh.map(announceCardHTML).join('');
+  document.getElementById('homeAnnounce').innerHTML = fresh.length
+    ? fresh.slice(0,3).map(announceCardHTML).join('')
     : '<div class="empty-state"><div class="icon">📣</div><p>No announcements yet.</p></div>';
 }
 
@@ -1555,6 +1567,20 @@ function renderCalendarGrid(){
   titleEl.textContent = first.toLocaleDateString('en-US',{month:'long', year:'numeric'});
   renderCalDayDetails();
 }
+function nextClubOccurrence(club){
+  const wd = weekdayFromDayString(club.day);
+  if(!wd) return null;
+  const idx = WD_INDEX[wd];
+  const today = new Date(); today.setHours(0,0,0,0);
+  for(let add=0; add<14; add++){
+    const d = new Date(today); d.setDate(d.getDate()+add);
+    if(d.getDay()===idx){
+      const label = d.toLocaleDateString('en-US',{month:'short', day:'numeric'});
+      return { title: club.name+' Meeting', date: label, dateObj: d, time: club.time, loc: club.room, cat:'clubs' };
+    }
+  }
+  return null;
+}
 function collectCalendarItems(){
   const items = [];
   teams.forEach(t=>{
@@ -1566,6 +1592,10 @@ function collectCalendarItems(){
   events.forEach(e=>{
     const d = parseGameDate(e.date);
     items.push({title:e.title, date:e.date, dateObj:d, time:e.time, loc:e.loc, cat:'school', id:e.id});
+  });
+  clubs.forEach(c=>{
+    const occ = nextClubOccurrence(c);
+    if(occ) items.push(occ);
   });
   return items;
 }
@@ -1717,39 +1747,54 @@ function slideshowGoTo(i){
   renderSlideshowDots();
 }
 
-// ── Gentle morning tune (synthesized — no external audio files needed) ──
-const PENTA = { C5:523.25, D5:587.33, E5:659.25, G5:783.99, A5:880.00, C6:1046.50, D6:1174.66, E6:1318.51 };
-const MORNING_MELODY = [
-  {t:0.0, f:PENTA.C5, d:1.6, v:0.09},
-  {t:0.9, f:PENTA.E5, d:1.4, v:0.07},
-  {t:1.9, f:PENTA.G5, d:1.9, v:0.08},
-  {t:3.3, f:PENTA.D5, d:1.4, v:0.06},
-  {t:4.1, f:PENTA.A5, d:1.7, v:0.08},
-  {t:5.2, f:PENTA.E5, d:1.3, v:0.06},
-  {t:6.0, f:PENTA.C6, d:2.1, v:0.09},
-  {t:7.4, f:PENTA.G5, d:1.6, v:0.05},
+// ── Soft Piano Ambient tune (synthesized — no external audio files needed) ──
+// Slow-moving sustained chords (Cmaj7 → Fmaj7 → Am7 → Gmaj) with a long, gentle
+// attack/release so each chord fades into the next rather than looping abruptly.
+const AMBIENT_CHORDS = [
+  [261.63, 329.63, 392.00, 493.88], // Cmaj7
+  [349.23, 440.00, 523.25, 659.25], // Fmaj7
+  [220.00, 261.63, 329.63, 392.00], // Am7
+  [196.00, 246.94, 293.66, 392.00], // Gmaj(add9-ish)
 ];
-const MORNING_LOOP_SECONDS = 9.2;
+const CHORD_SECONDS = 7.5;
+const AMBIENT_LOOP_SECONDS = AMBIENT_CHORDS.length * CHORD_SECONDS;
 let slideshowAudioCtx = null;
 let slideshowAudioGain = null;
 let slideshowAudioInterval = null;
 let slideshowMuted = false;
 
-function playChime(ctx, dest, freq, startTime, dur, vol){
+function playPadNote(ctx, dest, freq, startTime, dur, vol){
+  // Warm body tone
   const osc = ctx.createOscillator();
-  osc.type = 'sine';
+  osc.type = 'triangle';
   osc.frequency.value = freq;
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, startTime);
-  gain.gain.linearRampToValueAtTime(vol, startTime+0.06);
-  gain.gain.exponentialRampToValueAtTime(0.0001, startTime+dur);
+  gain.gain.linearRampToValueAtTime(vol, startTime + 1.6);
+  gain.gain.setValueAtTime(vol, startTime + dur*0.55);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
   osc.connect(gain); gain.connect(dest);
-  osc.start(startTime); osc.stop(startTime+dur+0.1);
+  osc.start(startTime); osc.stop(startTime + dur + 0.2);
+  // Faint octave-up shimmer for a soft piano-like sparkle
+  const osc2 = ctx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.value = freq*2;
+  const gain2 = ctx.createGain();
+  gain2.gain.setValueAtTime(0, startTime);
+  gain2.gain.linearRampToValueAtTime(vol*0.18, startTime + 1.6);
+  gain2.gain.setValueAtTime(vol*0.18, startTime + dur*0.55);
+  gain2.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
+  osc2.connect(gain2); gain2.connect(dest);
+  osc2.start(startTime); osc2.stop(startTime + dur + 0.2);
 }
-function scheduleMorningLoop(){
+function scheduleAmbientLoop(){
   if(!slideshowAudioCtx) return;
-  const base = slideshowAudioCtx.currentTime + 0.1;
-  MORNING_MELODY.forEach(n=> playChime(slideshowAudioCtx, slideshowAudioGain, n.f, base+n.t, n.d, n.v));
+  const base = slideshowAudioCtx.currentTime + 0.15;
+  AMBIENT_CHORDS.forEach((chord,i)=>{
+    const start = base + i*CHORD_SECONDS;
+    const dur = CHORD_SECONDS + 1.2; // slight overlap into the next chord for a legato crossfade
+    chord.forEach(freq=> playPadNote(slideshowAudioCtx, slideshowAudioGain, freq, start, dur, 0.035));
+  });
 }
 function startSlideshowMusic(){
   try{
@@ -1760,9 +1805,9 @@ function startSlideshowMusic(){
       slideshowAudioGain.connect(slideshowAudioCtx.destination);
     }
     if(slideshowAudioCtx.state==='suspended') slideshowAudioCtx.resume();
-    scheduleMorningLoop();
+    scheduleAmbientLoop();
     if(slideshowAudioInterval) clearInterval(slideshowAudioInterval);
-    slideshowAudioInterval = setInterval(scheduleMorningLoop, MORNING_LOOP_SECONDS*1000);
+    slideshowAudioInterval = setInterval(scheduleAmbientLoop, AMBIENT_LOOP_SECONDS*1000);
   }catch(e){ console.warn('Slideshow music unavailable:', e); }
 }
 function stopSlideshowMusic(){

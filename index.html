@@ -626,8 +626,9 @@
 
 <div class="modal-bg" id="modal-add-game">
   <div class="modal">
-    <h2>Add Game</h2>
+    <h2 id="game-modal-title">Add Game</h2>
     <input type="hidden" id="fg-teamid" />
+    <input type="hidden" id="fg-gameid" />
     <div class="field-row">
       <div class="field"><label>Opponent</label><input id="fg-opp" placeholder="Opponent school" /></div>
       <div class="field"><label>Date</label><input id="fg-date" type="date" /></div>
@@ -650,7 +651,7 @@
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-game')">Cancel</button>
-      <button class="btn btn-primary" onclick="addGame()">Save Game</button>
+      <button class="btn btn-primary" id="game-modal-save-btn" onclick="addGame()">Save Game</button>
     </div>
   </div>
 </div>
@@ -1104,13 +1105,25 @@ function renderSports(){
   const grid = document.getElementById('sportsGrid');
   if(!teams.length){ grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">🏆</div><p>No teams yet.<br>Hit "+ Add Team" to create one.</p></div>'; return; }
   grid.innerHTML = teams.map(t=>{
-    const upcoming = (t.games||[]).filter(g=>g.us==null).slice(0,2);
-    const gamesHtml = upcoming.length ? upcoming.map(g=>`
+    const upcoming = (t.games||[]).slice(0,2);
+    const gamesHtml = upcoming.length ? upcoming.map(g=>{
+      const scored = g.us!=null && g.them!=null;
+      const r = scored ? result(g.us,g.them) : null;
+      const rColor = r==='W' ? '#4ade80' : r==='L' ? '#f87171' : 'var(--gray-light)';
+      const metaOrScore = scored
+        ? `<span style="color:${rColor};font-weight:700">${r}</span> ${g.us}–${g.them}`
+        : [g.time,g.loc].filter(Boolean).join(' · ');
+      const scoreBtn = scored
+        ? `<button class="icon-btn" title="Edit score" onclick="requireAuth(()=>openAddScore(${t.id},${g.id}))">✎</button>`
+        : `<button class="icon-btn" title="Add score" onclick="requireAuth(()=>openAddScore(${t.id},${g.id}))">🏅</button>`;
+      return `
       <div class="game-row" style="margin-top:8px;padding:10px 12px;">
         <div class="ev-date-block" style="width:44px"><div class="ev-month">${(g.date||'').split(' ')[0]||''}</div><div class="ev-day" style="font-size:18px">${(g.date||'').split(' ')[1]||'—'}</div></div>
-        <div class="ev-info"><div class="ev-title" style="font-size:13px">${g.ha==='Home'?'vs':'@'} ${g.opp}</div><div class="ev-meta">${[g.time,g.loc].filter(Boolean).join(' · ')}</div></div>
+        <div class="ev-info"><div class="ev-title" style="font-size:13px">${g.ha==='Home'?'vs':'@'} ${g.opp}</div><div class="ev-meta">${metaOrScore}</div></div>
         <span class="${g.ha==='Home'?'home-badge':'away-badge'}">${g.ha}</span>
-      </div>`).join('') : '<p style="font-size:12px;color:var(--text3);margin-top:10px">No upcoming games scheduled.</p>';
+        ${scoreBtn}
+      </div>`;
+    }).join('') : '<p style="font-size:12px;color:var(--text3);margin-top:10px">No upcoming games scheduled.</p>';
     return `<div class="info-card">
       <div class="card-actions"><button class="icon-btn" title="Add game" onclick="requireAuth(()=>openAddGame(${t.id}))">＋</button><button class="icon-btn" title="Edit team" onclick="requireAuth(()=>openEditTeam(${t.id}))">✎</button><button class="icon-btn" title="Remove team" onclick="requireAuth(()=>removeTeam(${t.id}))">✕</button></div>
       <div class="card-top"><h3>${t.name}</h3><span class="tag">${t.sport}</span></div>
@@ -1126,9 +1139,32 @@ function renderSports(){
 }
 function openAddGame(teamId){
   document.getElementById('fg-teamid').value = teamId;
+  document.getElementById('fg-gameid').value = '';
   document.getElementById('fg-opp').value='';document.getElementById('fg-date').value='';
   document.getElementById('fg-time').value='';document.getElementById('fg-time-end').value='';document.getElementById('fg-loc').value='';
   document.getElementById('fg-us').value='';document.getElementById('fg-them').value='';
+  document.getElementById('game-modal-title').textContent='Add Game';
+  document.getElementById('game-modal-save-btn').textContent='Save Game';
+  openModal('modal-add-game');
+}
+// Opens the same modal pre-filled for an existing game, focused on entering/editing its score.
+function openAddScore(teamId, gameId){
+  const team = teams.find(t=>t.id===teamId);
+  const g = team && (team.games||[]).find(g=>g.id===gameId);
+  if(!team || !g) return;
+  document.getElementById('fg-teamid').value = teamId;
+  document.getElementById('fg-gameid').value = gameId;
+  document.getElementById('fg-opp').value = g.opp||'';
+  document.getElementById('fg-date').value = labelToDateInput(g.date);
+  const times = String(g.time||'').split('–').map(s=>s.trim());
+  document.getElementById('fg-time').value = labelToTimeInput(times[0]||'');
+  document.getElementById('fg-time-end').value = labelToTimeInput(times[1]||'');
+  document.getElementById('fg-loc').value = g.loc||'';
+  document.getElementById('fg-ha').value = g.ha||'Home';
+  document.getElementById('fg-us').value = g.us!=null ? g.us : '';
+  document.getElementById('fg-them').value = g.them!=null ? g.them : '';
+  document.getElementById('game-modal-title').textContent = g.us!=null ? 'Edit Score' : 'Add Score';
+  document.getElementById('game-modal-save-btn').textContent = 'Save Score';
   openModal('modal-add-game');
 }
 function openAddTeam(){
@@ -1187,10 +1223,28 @@ async function addGame(){
   const them = themVal===''?null:parseInt(themVal,10);
   if(!opp||!date) return alert('Please enter an opponent and date.');
   team.games = team.games||[];
-  team.games.push({id:nextGid++, opp, date, time, ha, loc, us, them});
-  if(us!=null && them!=null){
-    const r = result(us,them);
-    if(r==='W') team.w++; else if(r==='D') team.d++; else team.l++;
+  const gameIdStr = document.getElementById('fg-gameid').value;
+
+  if(gameIdStr){
+    // Editing an existing game (e.g. via the "Add Score" button on a game row).
+    const g = team.games.find(g=>g.id===parseInt(gameIdStr,10));
+    if(!g) return;
+    // Undo this game's previous contribution to the record, if it had a score before.
+    if(g.us!=null && g.them!=null){
+      const prevR = result(g.us,g.them);
+      if(prevR==='W') team.w--; else if(prevR==='D') team.d--; else team.l--;
+    }
+    Object.assign(g, {opp, date, time, ha, loc, us, them});
+    if(us!=null && them!=null){
+      const r = result(us,them);
+      if(r==='W') team.w++; else if(r==='D') team.d++; else team.l++;
+    }
+  } else {
+    team.games.push({id:nextGid++, opp, date, time, ha, loc, us, them});
+    if(us!=null && them!=null){
+      const r = result(us,them);
+      if(r==='W') team.w++; else if(r==='D') team.d++; else team.l++;
+    }
   }
   closeModal('modal-add-game');
   await saveAll(); renderAll();

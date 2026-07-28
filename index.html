@@ -177,9 +177,6 @@
   .cal-export-card { background: var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(16px); }
   .cal-two-col { display:flex; flex-direction:column; gap:20px; }
   .cal-day-col-title { font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; color:var(--gold-light); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; }
-  body.slideshow-mode .cal-two-col { flex-direction:row; align-items:flex-start; gap:clamp(12px,2.4vh,28px); }
-  body.slideshow-mode .cal-day-col { flex:1; min-width:0; }
-  body.slideshow-mode .cal-day-col-title { font-size:clamp(13px,2.2vh,20px); margin-bottom:clamp(6px,1.4vh,14px); text-align:center; }
   .cal-grid-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; margin-bottom:18px; }
   .cal-grid-header { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; }
   .cal-grid-title { font-family:'Fredoka',sans-serif; font-size:19px; font-weight:700; min-width:150px; text-align:center; }
@@ -250,140 +247,63 @@
 
   @media (max-width:600px){ .field-row{flex-direction:column} .section{padding:20px 14px 40px} }
 
-  /* ── Slideshow mode ─────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════════
+     SLIDESHOW MODE — rebuilt as a fully separate full-screen overlay.
+     It does NOT reuse .section/.app-main layout at all, so nothing in
+     the normal app CSS can interact with or break it, and vice versa.
+     Fixed font sizes (no measure-and-shrink math) — long content is
+     handled by splitting into extra slides in JS, never by scaling text.
+     ══════════════════════════════════════════════════════════════ */
   .slideshow-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; font-size:11px; font-weight:600; color:var(--gold-light); background:rgba(217,161,37,0.1); border:1px solid rgba(217,161,37,0.3); border-radius:6px; cursor:pointer; font-family:'Fredoka',sans-serif; width:100%; transition:all 0.15s; }
   .slideshow-btn:hover { background:rgba(217,161,37,0.18); }
-  body.slideshow-mode .sidebar,
-  body.slideshow-mode .utility-bar,
-  body.slideshow-mode .setup-banner,
-  body.slideshow-mode .btn,
-  body.slideshow-mode .icon-btn,
-  body.slideshow-mode .card-actions,
-  body.slideshow-mode .quicklinks,
-  body.slideshow-mode .nextup,
-  body.slideshow-mode .cal-export-card,
-  body.slideshow-mode .cal-grid-wrap,
-  body.slideshow-mode #menu-pdf-status,
-  body.slideshow-mode .hero-sub,
-  body.slideshow-mode #sec-calendar .section-top,
-  body.slideshow-mode #sec-lunch .section-top,
-  body.slideshow-mode #sec-bell .section-top,
-  body.slideshow-mode .section-top p { display:none !important; }
-  /* ── Slideshow sizing: fluid, viewport-height-based — scales continuously to ANY screen
-     (phone landscape, Chromebook, TV) instead of jumping between fixed breakpoints.
-     .section gets permanent bottom padding so the fixed dots bar can never overlap content. */
-  body.slideshow-mode .app-shell { height:100vh; overflow:hidden; }
-  body.slideshow-mode .app-main { padding-bottom:0; height:100vh; flex:none; display:flex; flex-direction:column; justify-content:center; overflow:hidden; min-height:0; }
-  /* height (not max-height) locks .section to a real, stable 100vh box so
-     slideAvailHeight()'s clientHeight reading is a fixed truth, not a number
-     that moves depending on how tall the content inside happens to be. */
-  body.slideshow-mode .section { max-width:1300px; width:100%; height:100vh; min-height:0; padding-top:clamp(4px,1vh,10px); padding-bottom:clamp(48px,9vh,64px); box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; justify-content:center; }
 
-  /* ── Fit-to-screen engine ─────────────────────────────────────
-     Slideshow-only "today" views live inside their sections but stay hidden
-     in normal (app) mode. In slideshow mode, the normal week/month views are
-     hidden and the day views are shown instead. The fit engine measures the
-     rendered content and sets --fit (a font multiplier) so a sparse day gets
-     BIG text and a packed day shrinks to fit — never scrolling. */
-  .slideshow-only { display:none; }
-  body.slideshow-mode #sec-lunch .menu-week,
-  body.slideshow-mode #sec-calendar #calendarList,
-  body.slideshow-mode #sec-bell .table-wrap { display:none !important; }
-  body.slideshow-mode .slideshow-only { display:block; }
+  #ss-overlay { display:none; position:fixed; inset:0; z-index:800; background:var(--bg); overflow:hidden; }
+  #ss-overlay.show { display:block; }
+  #ss-slide { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:5vh 6vw; box-sizing:border-box; text-align:center; }
+  #ss-slide.ss-fade { animation: ssFadeIn 0.5s ease; }
+  @keyframes ssFadeIn { from{opacity:0} to{opacity:1} }
 
-  /* The fit layer is what actually gets measured + scaled. Everything the
-     viewer reads on a day slide lives inside it. --fit defaults to 1 and is
-     set per-slide by fitSlide() in JS. All type inside scales off --fit. */
-  body.slideshow-mode .fit-layer { --fit:1; }
+  .ss-eyebrow { font-family:'Fredoka',sans-serif; font-weight:700; font-size:22px; letter-spacing:2px; text-transform:uppercase; color:var(--gold-light); margin-bottom:6px; }
+  .ss-title { font-family:'Fredoka',sans-serif; font-weight:700; font-size:48px; color:var(--text); margin-bottom:6px; line-height:1.1; }
+  .ss-sub { font-size:20px; color:var(--text2); margin-bottom:28px; }
 
-  /* Today's events (slideshow) */
-  .slide-day-title { text-align:center; font-family:'Fredoka',sans-serif; font-weight:700;
-    font-size:calc(clamp(20px,4vh,44px) * var(--fit)); margin-bottom:calc(clamp(8px,1.6vh,20px) * var(--fit)); color:var(--text); }
-  .slide-day-sub { text-align:center; color:var(--gold-light); font-weight:600;
-    font-size:calc(clamp(11px,1.5vh,16px) * var(--fit)); letter-spacing:1px; text-transform:uppercase;
-    margin-bottom:calc(clamp(10px,2vh,22px) * var(--fit)); }
-  .slide-events { display:flex; flex-direction:column; gap:calc(clamp(6px,1.2vh,14px) * var(--fit));
-    max-width:1000px; margin:0 auto; }
-  .slide-event { display:flex; align-items:center; gap:calc(clamp(10px,1.6vh,20px) * var(--fit));
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
-    padding:calc(clamp(10px,1.8vh,22px) * var(--fit)) calc(clamp(14px,2.2vh,28px) * var(--fit)); }
-  .slide-event .se-time { flex-shrink:0; min-width:calc(clamp(70px,9vh,120px) * var(--fit));
-    font-family:'Fredoka',sans-serif; font-weight:700; color:var(--gold-light);
-    font-size:calc(clamp(15px,2.4vh,30px) * var(--fit)); text-align:center; line-height:1.1; }
-  .slide-event .se-body { flex:1; min-width:0; }
-  .slide-event .se-title { font-family:'Fredoka',sans-serif; font-weight:600; color:var(--text);
-    font-size:calc(clamp(16px,2.6vh,34px) * var(--fit)); line-height:1.15; }
-  .slide-event .se-meta { color:var(--text2); font-size:calc(clamp(12px,1.8vh,20px) * var(--fit));
-    margin-top:calc(4px * var(--fit)); }
-  .slide-event .se-cat { flex-shrink:0; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
-    font-size:calc(clamp(10px,1.4vh,15px) * var(--fit)); padding:calc(4px * var(--fit)) calc(12px * var(--fit));
-    border-radius:999px; }
-  .se-cat.cat-sports{ background:rgba(217,161,37,0.16); color:var(--gold-light); }
-  .se-cat.cat-clubs{ background:rgba(120,170,255,0.16); color:#8ab4ff; }
-  .se-cat.cat-school{ background:rgba(120,220,160,0.16); color:#7fdca0; }
+  .ss-list { display:flex; flex-direction:column; gap:14px; width:100%; max-width:1000px; }
+  .ss-item { display:flex; align-items:center; gap:20px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px 26px; text-align:left; }
+  .ss-item-time { flex-shrink:0; min-width:110px; font-family:'Fredoka',sans-serif; font-weight:700; color:var(--gold-light); font-size:24px; text-align:center; }
+  .ss-item-body { flex:1; min-width:0; }
+  .ss-item-title { font-family:'Fredoka',sans-serif; font-weight:600; color:var(--text); font-size:28px; line-height:1.2; }
+  .ss-item-meta { color:var(--text2); font-size:17px; margin-top:4px; }
+  .ss-item-tag { flex-shrink:0; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; font-size:13px; padding:5px 14px; border-radius:999px; }
+  .ss-tag-sports { background:rgba(217,161,37,0.16); color:var(--gold-light); }
+  .ss-tag-clubs { background:rgba(120,170,255,0.16); color:#8ab4ff; }
+  .ss-tag-school { background:rgba(120,220,160,0.16); color:#7fdca0; }
 
-  /* Today's lunch (slideshow) */
-  .slide-lunch-card { max-width:800px; margin:0 auto; background:var(--surface);
-    border:1px solid var(--border); border-radius:var(--radius-lg);
-    padding:calc(clamp(16px,3vh,40px) * var(--fit)) calc(clamp(20px,3.5vh,48px) * var(--fit)); }
-  .slide-lunch-items { display:flex; flex-direction:column; gap:calc(clamp(8px,1.6vh,18px) * var(--fit)); }
-  .slide-lunch-item { display:flex; align-items:flex-start; gap:calc(clamp(8px,1.4vh,16px) * var(--fit));
-    font-family:'Fredoka',sans-serif; font-weight:500; color:var(--text);
-    font-size:calc(clamp(16px,2.8vh,38px) * var(--fit)); line-height:1.25; }
-  .slide-lunch-item::before { content:'•'; color:var(--gold-light); flex-shrink:0; }
-  .fit-layer-table { max-width:900px; margin:0 auto; width:100%; }
-  .fit-layer-table table { width:100%; border-collapse:collapse; }
-  .fit-layer-table th { text-align:left; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px;
-    font-size:calc(clamp(11px,1.5vh,15px) * var(--fit)); padding:calc(6px * var(--fit)) calc(10px * var(--fit)); border-bottom:1px solid var(--border2); }
-  .fit-layer-table td { font-family:'Fredoka',sans-serif; font-weight:600; color:var(--text);
-    font-size:calc(clamp(14px,2.2vh,26px) * var(--fit)); padding:calc(8px * var(--fit)) calc(10px * var(--fit)); border-bottom:1px solid var(--border); }
-  .slide-empty { text-align:center; color:var(--text2); font-family:'Fredoka',sans-serif;
-    font-size:calc(clamp(16px,2.6vh,32px) * var(--fit)); padding:calc(clamp(20px,4vh,60px) * var(--fit)) 20px; }
-  .slide-empty .se-icon { font-size:calc(clamp(30px,6vh,70px) * var(--fit)); display:block;
-    margin-bottom:calc(clamp(8px,1.6vh,18px) * var(--fit)); }
-  body.slideshow-mode .hero { padding:clamp(6px,2.2vh,28px) 24px clamp(4px,1.4vh,18px); flex-shrink:0; }
-  body.slideshow-mode .hero-logo { width:clamp(30px,7.5vh,76px); height:clamp(30px,7.5vh,76px); margin-bottom:clamp(2px,0.8vh,10px); }
-  body.slideshow-mode .hero-eyebrow { font-size:clamp(8px,1.3vh,13px); letter-spacing:3px; margin-bottom:clamp(2px,0.6vh,8px); }
-  body.slideshow-mode .hero-title { font-size:clamp(18px,6.5vh,68px); }
-  body.slideshow-mode .section-top { justify-content:center; text-align:center; margin-bottom:clamp(6px,2.5vh,26px); }
-  body.slideshow-mode .section-top h2 { font-size:clamp(16px,3.8vh,38px); }
-  body.slideshow-mode .announce-card { padding:clamp(8px,1.8vh,22px) clamp(12px,2vh,26px); margin-bottom:clamp(6px,1.2vh,12px); }
-  body.slideshow-mode .announce-card h4 { font-size:clamp(13px,2vh,20px); }
-  body.slideshow-mode .announce-card p { font-size:clamp(11px,1.6vh,15px); }
-  body.slideshow-mode .a-date { font-size:clamp(10px,1.3vh,12px); }
-  body.slideshow-mode .event-card, body.slideshow-mode .game-row { padding:clamp(8px,1.6vh,16px) clamp(12px,2vh,20px); margin-bottom:clamp(5px,1vh,9px); }
-  body.slideshow-mode .ev-date-block { width:clamp(34px,6vh,50px); }
-  body.slideshow-mode .ev-title { font-size:clamp(12px,1.8vh,17px); }
-  body.slideshow-mode .ev-meta { font-size:clamp(10px,1.4vh,13px); }
-  body.slideshow-mode .ev-cat, body.slideshow-mode .home-badge, body.slideshow-mode .away-badge { font-size:clamp(9px,1.1vh,11px); padding:4px 10px; }
-  body.slideshow-mode .cal-grid-wrap { padding:clamp(8px,1.8vh,18px); margin-bottom:clamp(8px,1.6vh,16px); }
-  body.slideshow-mode .cal-grid-header { margin-bottom:clamp(6px,1.4vh,14px); }
-  body.slideshow-mode .cal-grid-title { font-size:clamp(13px,2vh,19px); }
-  body.slideshow-mode .cal-grid { gap:clamp(3px,0.7vh,5px); }
-  body.slideshow-mode .cal-dow { font-size:clamp(8px,1vh,10px); padding-bottom:clamp(3px,0.7vh,6px); }
-  body.slideshow-mode .cal-day { aspect-ratio:unset; height:clamp(18px,4.2vh,40px); padding:clamp(2px,0.5vh,6px) 2px 3px; }
-  body.slideshow-mode .cal-day .dnum { font-size:clamp(8px,1.1vh,12px); margin-bottom:clamp(1px,0.3vh,4px); }
-  body.slideshow-mode .cal-dot { width:clamp(3px,0.6vh,6px); height:clamp(3px,0.6vh,6px); }
-  body.slideshow-mode .cal-legend { margin-top:clamp(6px,1.4vh,14px); font-size:clamp(8px,1.1vh,11px); gap:clamp(8px,1.6vh,16px); }
-  body.slideshow-mode .menu-week { grid-template-columns:repeat(5,1fr); gap:clamp(4px,1vh,12px); }
-  body.slideshow-mode .menu-day { padding:clamp(8px,1.8vh,16px); }
-  body.slideshow-mode .menu-day h4 { font-size:clamp(12px,1.8vh,17px); margin-bottom:clamp(4px,1vh,10px); padding-bottom:clamp(4px,0.8vh,8px); }
-  body.slideshow-mode .menu-item { font-size:clamp(9.5px,1.4vh,15.5px); margin-bottom:clamp(2px,0.6vh,7px); }
-  body.slideshow-mode table { font-size:clamp(10.5px,1.6vh,16px); }
-  body.slideshow-mode th { font-size:clamp(8px,1.1vh,12px); padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
-  body.slideshow-mode td { padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
-  body.slideshow-mode .empty-state { padding:clamp(18px,4vh,60px) 20px; }
-  body.slideshow-mode .empty-state .icon { font-size:clamp(20px,4vh,40px); }
-  body.slideshow-mode .empty-state p { font-size:clamp(11px,1.6vh,15px); }
-  body.slideshow-mode .section.active { animation: slideshowFadeIn 0.7s ease; }
-  @keyframes slideshowFadeIn { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
-  .slideshow-controls { position:fixed; top:18px; right:18px; z-index:999; display:none; gap:8px; }
-  body.slideshow-mode .slideshow-controls { display:flex; }
-  .slideshow-ctrl-btn { padding:9px 16px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Fredoka',sans-serif; font-weight:600; font-size:12px; cursor:pointer; backdrop-filter:blur(10px); }
-  .slideshow-dots { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:999; display:none; gap:9px; padding:8px 14px; background:rgba(10,24,38,0.7); border:1px solid var(--glass-border); border-radius:20px; backdrop-filter:blur(10px); }
-  body.slideshow-mode .slideshow-dots { display:flex; }
-  .slideshow-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.25); transition:all 0.2s; }
-  .slideshow-dot.active { background:var(--gold-light); width:20px; border-radius:4px; }
+  .ss-lunch-card { max-width:800px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px 40px; }
+  .ss-lunch-items { display:flex; flex-direction:column; gap:14px; }
+  .ss-lunch-item { display:flex; align-items:flex-start; gap:12px; font-family:'Fredoka',sans-serif; font-weight:500; color:var(--text); font-size:26px; line-height:1.3; text-align:left; }
+  .ss-lunch-item::before { content:'•'; color:var(--gold-light); flex-shrink:0; }
+
+  .ss-table { width:100%; max-width:900px; border-collapse:collapse; }
+  .ss-table th { text-align:left; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px; font-size:15px; padding:8px 14px; border-bottom:1px solid var(--border2); }
+  .ss-table td { font-family:'Fredoka',sans-serif; font-weight:600; color:var(--text); font-size:22px; padding:12px 14px; border-bottom:1px solid var(--border); }
+
+  .ss-announce { max-width:900px; width:100%; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:12px; padding:22px 28px; text-align:left; margin-bottom:14px; }
+  .ss-announce h4 { font-size:24px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .ss-announce p { font-size:18px; color:var(--text2); line-height:1.5; }
+  .ss-announce .ss-a-date { font-size:14px; color:var(--text3); margin-bottom:4px; }
+
+  .ss-empty { text-align:center; color:var(--text2); font-family:'Fredoka',sans-serif; font-size:28px; padding:40px 20px; }
+  .ss-empty .ss-icon { font-size:60px; display:block; margin-bottom:16px; }
+
+  #ss-controls { position:fixed; top:18px; right:18px; z-index:900; display:none; gap:8px; }
+  #ss-controls.show { display:flex; }
+  .ss-ctrl-btn { padding:10px 18px; border-radius:10px; background:rgba(10,24,38,0.75); border:1px solid var(--glass-border); color:var(--text2); font-family:'Fredoka',sans-serif; font-weight:600; font-size:13px; cursor:pointer; backdrop-filter:blur(10px); }
+
+  @media (max-width:700px){
+    .ss-title{font-size:34px} .ss-item-title{font-size:20px} .ss-item-time{font-size:18px;min-width:80px}
+    .ss-lunch-item{font-size:19px} .ss-table th{font-size:12px} .ss-table td{font-size:16px}
+  }
+
 </style>
 </head>
 <body>
@@ -522,7 +442,6 @@
   </div>
 
   <div class="menu-week" id="menuGrid"></div>
-  <div class="slideshow-only" id="slideMenuToday"></div>
 </div>
 
 <!-- BELL SCHEDULE -->
@@ -537,7 +456,6 @@
       <tbody id="bellBody"></tbody>
     </table>
   </div>
-  <div class="slideshow-only" id="slideBellToday"></div>
 </div>
 
 <!-- CALENDAR -->
@@ -594,18 +512,20 @@
   </div>
 
   <div id="calendarList"></div>
-  <div class="slideshow-only" id="slideCalToday"></div>
 </div>
 
 
 </div><!-- /app-main -->
 </div><!-- /app-shell -->
 
-<div class="slideshow-controls">
-  <button class="slideshow-ctrl-btn" id="slideshow-mute-btn" onclick="toggleSlideshowMute()" title="Mute/unmute the background music">🔊</button>
-  <button class="slideshow-ctrl-btn" onclick="stopSlideshow()">✕ Exit Slideshow</button>
+<!-- Slideshow — fully separate full-screen overlay, isolated from the app layout above -->
+<div id="ss-overlay">
+  <div id="ss-slide"></div>
 </div>
-<div class="slideshow-dots" id="slideshow-dots"></div>
+<div id="ss-controls">
+  <button class="ss-ctrl-btn" id="ss-mute-btn" onclick="toggleSlideshowMute()" title="Mute/unmute the background music">🔊</button>
+  <button class="ss-ctrl-btn" onclick="stopSlideshow()">✕ Exit Slideshow</button>
+</div>
 
 
 <!-- MODALS -->
@@ -2059,54 +1979,34 @@ function renderAll(){
   renderNextUp();
 }
 
-// ── Slideshow mode (for iPhone → AirPlay → Apple TV screen mirroring) ─
-// calendar + lunch + bell show ONLY today, and each AUTO-PAGINATES
-// ("Events 1/2", "Events 2/2"...) when there's more content than fits at a
-// readable size, instead of shrinking text or scrolling.
-// "home" is intentionally excluded: it stacks News + Coming Up (duplicating
-// the standalone announcements/calendar slides) with no fit-layer or
-// pagination of its own, so it can't be sized safely for a fixed screen.
-// buildSlideQueue() turns this into the actual slide list.
-const SLIDESHOW_SECTIONS = ['announcements','calendar','lunch','bell'];
+
+// ══════════════════════════════════════════════════════════════
+// SLIDESHOW MODE — rebuilt from scratch as a self-contained system.
+// Renders into its own full-screen #ss-overlay (not the normal app
+// sections), uses FIXED font sizes (see CSS), and splits long content
+// into extra slides by counting items against a fixed per-slide cap —
+// no live DOM measuring, no "shrink until it fits" math. Each render
+// function is a pure function of its inputs, so there's nothing for
+// slides to fight over or disagree about.
+// ══════════════════════════════════════════════════════════════
 const SLIDESHOW_SECONDS = 7;
-// Text is never shrunk below this multiplier — below it, we paginate instead.
-// (Kept as a floor so a single item never gets absurdly huge, not as a
-// "shrink to avoid overflow" mechanism.)
-const FIT_MIN = 0.62;
+// Max items per slide before splitting into "1/2, 2/2...". These are
+// deliberately conservative fixed caps (not measured) so a slide never
+// depends on font metrics, screen size, or layout timing to decide
+// whether it overflows.
+const SS_MAX_EVENTS_PER_SLIDE = 4;
+const SS_MAX_LUNCH_PER_SLIDE = 8;
+const SS_MAX_BELL_PER_SLIDE = 6;
+const SS_MAX_ANNOUNCE_PER_SLIDE = 2;
+
 let slideshowTimer = null;
 let slideshowIdx = 0;
-// slideQueue: array of {section, page, pages}. page/pages meaningful for
-// every paginated section (calendar, lunch, bell). Rebuilt each time the
-// slideshow (re)starts.
-let slideQueue = [];
+let slideQueue = []; // array of render functions, each returning an HTML string
 
-function buildSlideQueue(){
-  slideQueue = [];
-  _pageCache = {}; // force fresh measured pagination for every section
-  SLIDESHOW_SECTIONS.forEach(section=>{
-    const pages = Math.max(1, getPagesFor(section).length);
-    for(let p=0;p<pages;p++) slideQueue.push({section, page:p, pages});
-  });
-}
-
-function renderSlideshowDots(){
-  const dots = document.getElementById('slideshow-dots');
-  if(!dots) return;
-  dots.innerHTML = slideQueue.map((s,i)=>`<span class="slideshow-dot${i===slideshowIdx?' active':''}"></span>`).join('');
-}
-
-function slideshowGoTo(i){
-  if(!slideQueue.length) buildSlideQueue();
-  slideshowIdx = ((i % slideQueue.length) + slideQueue.length) % slideQueue.length;
-  const slide = slideQueue[slideshowIdx];
-  showSection(slide.section);
-  // Render the day-only, correct-page view BEFORE fitting.
-  if(slide.section==='calendar') renderSlideCalToday(slide.page, slide.pages);
-  if(slide.section==='lunch') renderSlideMenuToday(slide.page, slide.pages);
-  if(slide.section==='bell') renderSlideBellToday(slide.page, slide.pages);
-  renderSlideshowDots();
-  // Fit after the browser has laid the new content out.
-  requestAnimationFrame(()=>requestAnimationFrame(fitActiveSlide));
+function chunk(arr, size){
+  const out = [];
+  for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+  return out;
 }
 
 // ── Today-only data helpers ───────────────────────────────────
@@ -2120,7 +2020,6 @@ function todaysEventItems(){
       return va-vb;
     });
 }
-
 function todaysLunchItems(){
   if(!menu.weeks || !menu.weeks.length) return null; // null = no menu uploaded
   const today = new Date(); today.setHours(0,0,0,0);
@@ -2132,228 +2031,133 @@ function todaysLunchItems(){
   }
   return []; // menu exists but nothing listed for today (weekend / no-school day)
 }
-
-function bellPeriodItems(){
-  return (bell||[]);
+function freshAnnouncements(){
+  return announcements.filter(a=>announcementIsFresh(a.date));
 }
 
-// ── Generic measured pagination ────────────────────────────────
-// One engine, reused by calendar/lunch/bell: render items into the REAL
-// slide DOM, measure natural height vs. available height; when adding the
-// next item would push the scale below FIT_MIN, close the page and start a
-// new one. This is what makes "too much → extra slide" work for every
-// section, not just the calendar.
-let _pageCache = {};
-
-const SLIDE_CONFIG = {
-  calendar: { host:'slideCalToday', section:'sec-calendar', items:todaysEventItems, render:renderEventsFitLayer },
-  lunch:    { host:'slideMenuToday', section:'sec-lunch', items:()=> todaysLunchItems()||[], render:renderLunchFitLayer },
-  bell:     { host:'slideBellToday', section:'sec-bell', items:bellPeriodItems, render:renderBellFitLayer },
-};
-
-function getPagesFor(section){
-  if(section!=='calendar' && section!=='lunch' && section!=='bell') return [null]; // non-paginated slides (announcements)
-  if(_pageCache[section]) return _pageCache[section];
-  computePagesFor(section);
-  return _pageCache[section];
-}
-
-// Compute how the available height in a slide splits (used by both the
-// paginator and the fit engine so they never disagree).
-function slideAvailHeight(section, layer){
-  const secStyle = getComputedStyle(section);
-  const padTop = parseFloat(secStyle.paddingTop) || 0;
-  const padBot = parseFloat(secStyle.paddingBottom) || 0;
-  return section.clientHeight - padTop - padBot -
-    (layer.offsetTop - section.offsetTop - padTop);
-}
-
-function computePagesFor(sectionName){
-  const cfg = SLIDE_CONFIG[sectionName];
-  const items = cfg.items();
-  if(!items.length){ _pageCache[sectionName] = [[]]; return; }
-
-  const host = document.getElementById(cfg.host);
-  const section = document.getElementById(cfg.section);
-  // If we can't measure (e.g. not in slideshow DOM yet), fall back to a
-  // conservative fixed split so nothing is lost.
-  if(!host || !section){
-    const per = 5, pages=[];
-    for(let i=0;i<items.length;i+=per) pages.push(items.slice(i,i+per));
-    _pageCache[sectionName] = pages; return;
-  }
-
-  const wasHidden = !document.body.classList.contains('slideshow-mode');
-  if(wasHidden) document.body.classList.add('slideshow-mode');
-  const prevActive = document.querySelector('.section.active');
-  section.classList.add('active');
-
-  const measurePageScale = (subset)=>{
-    host.innerHTML = cfg.render(subset, 1, 1); // page/pages label irrelevant here
-    const layer = host.querySelector('.fit-layer');
-    if(!layer) return 1;
-    layer.style.setProperty('--fit','1');
-    void layer.offsetHeight;
-    const natural = layer.scrollHeight;
-    const avail = slideAvailHeight(section, layer);
-    if(natural<=0 || avail<=0) return 1;
-    return Math.min(1.9, (avail/natural)*0.98);
-  };
-
-  const pages = [];
-  let current = [];
-  for(const it of items){
-    const trial = current.concat([it]);
-    const scale = measurePageScale(trial);
-    if(scale < FIT_MIN && current.length){
-      // Adding this one pushes below the floor → close current page, start new.
-      pages.push(current);
-      current = [it];
-    } else {
-      current = trial;
-    }
-  }
-  if(current.length) pages.push(current);
-
-  // Restore DOM state we touched during measurement.
-  host.innerHTML = '';
-  if(prevActive){ section.classList.remove('active'); prevActive.classList.add('active'); }
-  if(wasHidden) document.body.classList.remove('slideshow-mode');
-
-  _pageCache[sectionName] = pages.length ? pages : [[]];
-}
-
-// Build just the events fit-layer HTML (shared by the paginator's measurement
-// pass and the real render).
-function renderEventsFitLayer(items, page, totalPages){
+// ── Slide HTML builders — each takes the items for ONE slide only ──
+function ssEventsSlideHTML(items, pageNum, totalPages){
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const pageLabel = totalPages>1 ? `Today's Events · ${page+1} of ${totalPages}` : "Today's Events";
-  let inner;
-  if(!items.length){
-    inner = `<div class="slide-empty"><span class="se-icon">📅</span>Nothing scheduled today</div>`;
-  } else {
-    const catLbl = c=> c==='sports'?'Sports':c==='clubs'?'Club':'Event';
-    const catCls = c=> c==='sports'?'cat-sports':c==='clubs'?'cat-clubs':'cat-school';
-    inner = `<div class="slide-events">` + items.map(it=>{
-      const meta = [it.loc].filter(Boolean).join(' · ');
-      return `<div class="slide-event">
-        <div class="se-time">${it.time || 'All day'}</div>
-        <div class="se-body">
-          <div class="se-title">${it.title}</div>
-          ${meta?`<div class="se-meta">${meta}</div>`:''}
-        </div>
-        <span class="se-cat ${catCls(it.cat)}">${catLbl(it.cat)}</span>
-      </div>`;
-    }).join('') + `</div>`;
-  }
-  return `<div class="fit-layer">
-    <div class="slide-day-sub">${dateLabel}</div>
-    <div class="slide-day-title">${pageLabel}</div>
-    ${inner}
-  </div>`;
+  const pageLabel = totalPages>1 ? `Today's Events · ${pageNum} of ${totalPages}` : "Today's Events";
+  const catLbl = c=> c==='sports'?'Sports':c==='clubs'?'Club':'Event';
+  const catCls = c=> c==='sports'?'ss-tag-sports':c==='clubs'?'ss-tag-clubs':'ss-tag-school';
+  const rows = items.map(it=>{
+    const meta = [it.loc].filter(Boolean).join(' · ');
+    return `<div class="ss-item">
+      <div class="ss-item-time">${it.time || 'All day'}</div>
+      <div class="ss-item-body">
+        <div class="ss-item-title">${it.title}</div>
+        ${meta?`<div class="ss-item-meta">${meta}</div>`:''}
+      </div>
+      <span class="ss-item-tag ${catCls(it.cat)}">${catLbl(it.cat)}</span>
+    </div>`;
+  }).join('');
+  return `<div class="ss-eyebrow">${dateLabel}</div>
+    <div class="ss-title">${pageLabel}</div>
+    <div class="ss-list">${rows}</div>`;
 }
-
-// Build just the lunch fit-layer HTML (shared by the paginator's measurement
-// pass and the real render).
-function renderLunchFitLayer(items, page, totalPages){
+function ssEventsEmptyHTML(){
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const pageLabel = totalPages>1 ? `Today's Lunch · ${page+1} of ${totalPages}` : "Today's Lunch";
-  const rawItems = todaysLunchItems();
-  let inner;
-  if(rawItems===null){
-    inner = `<div class="slide-empty"><span class="se-icon">🍽️</span>No menu uploaded yet</div>`;
-  } else if(!items.length){
-    inner = `<div class="slide-empty"><span class="se-icon">🍽️</span>No lunch listed for today</div>`;
+  return `<div class="ss-eyebrow">${dateLabel}</div>
+    <div class="ss-title">Today's Events</div>
+    <div class="ss-empty"><span class="ss-icon">📅</span>Nothing scheduled today</div>`;
+}
+function ssLunchSlideHTML(items, pageNum, totalPages){
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+  const pageLabel = totalPages>1 ? `Today's Lunch · ${pageNum} of ${totalPages}` : "Today's Lunch";
+  const rows = items.map(it=>`<div class="ss-lunch-item">${it}</div>`).join('');
+  return `<div class="ss-eyebrow">${dateLabel}</div>
+    <div class="ss-title">${pageLabel}</div>
+    <div class="ss-lunch-card"><div class="ss-lunch-items">${rows}</div></div>`;
+}
+function ssLunchEmptyHTML(uploaded){
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+  const msg = uploaded ? 'No lunch listed for today' : 'No menu uploaded yet';
+  return `<div class="ss-eyebrow">${dateLabel}</div>
+    <div class="ss-title">Today's Lunch</div>
+    <div class="ss-empty"><span class="ss-icon">🍽️</span>${msg}</div>`;
+}
+function ssBellSlideHTML(items, pageNum, totalPages){
+  const pageLabel = totalPages>1 ? `Bell Schedule · ${pageNum} of ${totalPages}` : "Bell Schedule";
+  const rows = items.map(p=>`<tr><td>${p.period||''}</td><td>${p.cls||''}</td><td>${p.start||''}</td><td>${p.end||''}</td></tr>`).join('');
+  return `<div class="ss-title">${pageLabel}</div>
+    <table class="ss-table"><thead><tr><th>Period</th><th>Class</th><th>Start</th><th>End</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function ssBellEmptyHTML(){
+  return `<div class="ss-title">Bell Schedule</div>
+    <div class="ss-empty"><span class="ss-icon">🔔</span>No periods added yet</div>`;
+}
+function ssAnnounceSlideHTML(items, pageNum, totalPages){
+  const pageLabel = totalPages>1 ? `School News · ${pageNum} of ${totalPages}` : "School News";
+  const cards = items.map(a=>`<div class="ss-announce">
+    <div class="ss-a-date">${a.date}</div>
+    <h4>${a.title}</h4>
+    <p>${a.body}</p>
+  </div>`).join('');
+  return `<div class="ss-title">${pageLabel}</div>
+    <div style="width:100%;max-width:900px;display:flex;flex-direction:column;align-items:stretch">${cards}</div>`;
+}
+function ssAnnounceEmptyHTML(){
+  return `<div class="ss-title">School News</div>
+    <div class="ss-empty"><span class="ss-icon">📣</span>No announcements yet</div>`;
+}
+
+// ── Build the full slide queue by COUNTING items, not measuring pixels ──
+function buildSlideQueue(){
+  slideQueue = [];
+
+  const announce = freshAnnouncements();
+  if(!announce.length){
+    slideQueue.push(ssAnnounceEmptyHTML);
   } else {
-    inner = `<div class="slide-lunch-card"><div class="slide-lunch-items">` +
-      items.map(it=>`<div class="slide-lunch-item">${it}</div>`).join('') +
-      `</div></div>`;
+    const pages = chunk(announce, SS_MAX_ANNOUNCE_PER_SLIDE);
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssAnnounceSlideHTML(pg, i+1, pages.length)));
   }
-  return `<div class="fit-layer">
-    <div class="slide-day-sub">${dateLabel}</div>
-    <div class="slide-day-title">${pageLabel}</div>
-    ${inner}
-  </div>`;
-}
 
-// Build just the bell-schedule fit-layer HTML (shared by the paginator's
-// measurement pass and the real render).
-function renderBellFitLayer(items, page, totalPages){
-  const pageLabel = totalPages>1 ? `Bell Schedule · ${page+1} of ${totalPages}` : "Bell Schedule";
-  let inner;
-  if(!items.length){
-    inner = `<div class="slide-empty"><span class="se-icon">🔔</span>No periods added yet</div>`;
+  const events = todaysEventItems();
+  if(!events.length){
+    slideQueue.push(ssEventsEmptyHTML);
   } else {
-    inner = `<div class="fit-layer-table"><table><thead><tr><th>Period</th><th>Class</th><th>Start</th><th>End</th></tr></thead><tbody>` +
-      items.map(p=>`<tr><td>${p.period||''}</td><td>${p.cls||''}</td><td>${p.start||''}</td><td>${p.end||''}</td></tr>`).join('') +
-      `</tbody></table></div>`;
+    const pages = chunk(events, SS_MAX_EVENTS_PER_SLIDE);
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssEventsSlideHTML(pg, i+1, pages.length)));
   }
-  return `<div class="fit-layer">
-    <div class="slide-day-title">${pageLabel}</div>
-    ${inner}
-  </div>`;
+
+  const lunchRaw = todaysLunchItems();
+  if(lunchRaw===null || !lunchRaw.length){
+    const uploaded = lunchRaw!==null;
+    slideQueue.push(()=>ssLunchEmptyHTML(uploaded));
+  } else {
+    const pages = chunk(lunchRaw, SS_MAX_LUNCH_PER_SLIDE);
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssLunchSlideHTML(pg, i+1, pages.length)));
+  }
+
+  const periods = bell||[];
+  if(!periods.length){
+    slideQueue.push(ssBellEmptyHTML);
+  } else {
+    const pages = chunk(periods, SS_MAX_BELL_PER_SLIDE);
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssBellSlideHTML(pg, i+1, pages.length)));
+  }
+
+  if(!slideQueue.length) slideQueue.push(()=> `<div class="ss-empty"><span class="ss-icon">👋</span>Nothing to show yet</div>`);
 }
 
-// ── Render: today's events slide ──────────────────────────────
-function renderSlideCalToday(page, pages){
-  const host = document.getElementById('slideCalToday');
-  if(!host) return;
-  const allPages = getPagesFor('calendar');
-  const items = allPages[page] || [];
-  const totalPages = pages || allPages.length;
-  host.innerHTML = renderEventsFitLayer(items, page, totalPages);
+function slideshowGoTo(i){
+  if(!slideQueue.length) buildSlideQueue();
+  slideshowIdx = ((i % slideQueue.length) + slideQueue.length) % slideQueue.length;
+  const slideEl = document.getElementById('ss-slide');
+  if(!slideEl) return;
+  slideEl.innerHTML = slideQueue[slideshowIdx]();
+  slideEl.classList.remove('ss-fade');
+  void slideEl.offsetWidth; // restart animation
+  slideEl.classList.add('ss-fade');
 }
 
-// ── Render: today's lunch slide ───────────────────────────────
-function renderSlideMenuToday(page, pages){
-  const host = document.getElementById('slideMenuToday');
-  if(!host) return;
-  const allPages = getPagesFor('lunch');
-  const items = allPages[page] || [];
-  const totalPages = pages || allPages.length;
-  host.innerHTML = renderLunchFitLayer(items, page, totalPages);
-}
 
-// ── Render: today's bell schedule slide ────────────────────────
-function renderSlideBellToday(page, pages){
-  const host = document.getElementById('slideBellToday');
-  if(!host) return;
-  const allPages = getPagesFor('bell');
-  const items = allPages[page] || [];
-  const totalPages = pages || allPages.length;
-  host.innerHTML = renderBellFitLayer(items, page, totalPages);
-}
-
-// ── Fit-to-screen engine ──────────────────────────────────────
-// Measures the active slide's content against the available height and sets
-// --fit on its .fit-layer so the content fills the screen without scrolling:
-// sparse day → big text, packed day → smaller text (down to FIT_MIN, past
-// which the calendar paginates instead).
-function fitActiveSlide(){
-  const section = document.querySelector('.section.active');
-  if(!section) return;
-  const layer = section.querySelector('.fit-layer');
-  if(!layer) return;
-
-  const avail = slideAvailHeight(section, layer);
-
-  // Reset to neutral, measure natural height, then scale.
-  layer.style.setProperty('--fit', '1');
-  void layer.offsetHeight; // force a synchronous reflow so scrollHeight is accurate
-  const natural = layer.scrollHeight;
-  if(natural <= 0 || avail <= 0){ return; }
-
-  let fit = avail / natural;
-  // Give a little breathing room and clamp.
-  fit = Math.min(1.9, fit * 0.98);
-  if(fit < FIT_MIN) fit = FIT_MIN;      // floor — pagination handles overflow
-  layer.style.setProperty('--fit', fit.toFixed(3));
-}
-
-// ── Soft Piano Ambient tune (synthesized — no external audio files needed) ──
-// Slow-moving sustained chords (Cmaj7 → Fmaj7 → Am7 → Gmaj) with a long, gentle
 // attack/release so each chord fades into the next rather than looping abruptly.
 const AMBIENT_CHORDS = [
   [261.63, 329.63, 392.00, 493.88], // Cmaj7
@@ -2422,12 +2226,15 @@ function stopSlideshowMusic(){
 function toggleSlideshowMute(){
   slideshowMuted = !slideshowMuted;
   if(slideshowAudioGain) slideshowAudioGain.gain.value = slideshowMuted ? 0 : 1;
-  const btn = document.getElementById('slideshow-mute-btn');
+  const btn = document.getElementById('ss-mute-btn');
   if(btn) btn.textContent = slideshowMuted ? '🔇' : '🔊';
 }
 
 function startSlideshow(){
-  document.body.classList.add('slideshow-mode');
+  const overlay = document.getElementById('ss-overlay');
+  const controls = document.getElementById('ss-controls');
+  if(overlay) overlay.classList.add('show');
+  if(controls) controls.classList.add('show');
   slideshowIdx = 0;
   buildSlideQueue();
   slideshowGoTo(0);
@@ -2442,34 +2249,18 @@ function startSlideshow(){
 }
 
 function stopSlideshow(){
-  document.body.classList.remove('slideshow-mode');
+  const overlay = document.getElementById('ss-overlay');
+  const controls = document.getElementById('ss-controls');
+  if(overlay) overlay.classList.remove('show');
+  if(controls) controls.classList.remove('show');
   if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer=null; }
   stopSlideshowMusic();
   try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{}); } catch(e){}
-  showSection('home');
 }
 
 document.addEventListener('keydown', e=>{
-  if (document.body.classList.contains('slideshow-mode') && e.key==='Escape') stopSlideshow();
-});
-
-// Re-fit when the mirrored screen's size changes (AirPlay handoff, TV
-// resolution, orientation). Debounced so rapid resize events don't thrash.
-let _fitResizeTimer = null;
-window.addEventListener('resize', ()=>{
-  if(!document.body.classList.contains('slideshow-mode')) return;
-  clearTimeout(_fitResizeTimer);
-  _fitResizeTimer = setTimeout(()=>{
-    // Event counts per page depend on height, so rebuild the queue too.
-    const cur = slideQueue[slideshowIdx];
-    buildSlideQueue();
-    // Try to stay on the same section after a rebuild.
-    if(cur){
-      const same = slideQueue.findIndex(s=>s.section===cur.section);
-      if(same>=0) slideshowIdx = same;
-    }
-    slideshowGoTo(slideshowIdx);
-  }, 250);
+  const overlay = document.getElementById('ss-overlay');
+  if (overlay && overlay.classList.contains('show') && e.key==='Escape') stopSlideshow();
 });
 
 startListening();

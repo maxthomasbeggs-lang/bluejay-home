@@ -369,7 +369,7 @@
   body.slideshow-mode .menu-day { padding:clamp(8px,1.8vh,16px); }
   body.slideshow-mode .menu-day h4 { font-size:clamp(12px,1.8vh,17px); margin-bottom:clamp(4px,1vh,10px); padding-bottom:clamp(4px,0.8vh,8px); }
   body.slideshow-mode .menu-item { font-size:clamp(9.5px,1.4vh,15.5px); margin-bottom:clamp(2px,0.6vh,7px); }
-
+  body.slideshow-mode table { font-size:clamp(10.5px,1.6vh,16px); }
   body.slideshow-mode th { font-size:clamp(8px,1.1vh,12px); padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
   body.slideshow-mode td { padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
   body.slideshow-mode .empty-state { padding:clamp(18px,4vh,60px) 20px; }
@@ -407,7 +407,7 @@
     <button class="nav-link" onclick="showSection('calendar')"><span class="nav-icon">📅</span><span class="nav-label">Calendar</span></button>
   </nav>
   <div class="sidebar-footer">
-    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through Home, News, Events, Lunch & Classes for screen mirroring">
+    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through News, Events, Lunch & Classes for screen mirroring">
       🖥️ Slideshow Mode
     </button>
     <button id="reset-data-btn" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
@@ -2060,11 +2060,14 @@ function renderAll(){
 }
 
 // ── Slideshow mode (for iPhone → AirPlay → Apple TV screen mirroring) ─
-// The base running order. calendar + lunch + bell show ONLY today, and each
-// AUTO-PAGINATES ("Events 1/2", "Events 2/2"...) when there's more content
-// than fits at a readable size, instead of shrinking text or scrolling.
+// calendar + lunch + bell show ONLY today, and each AUTO-PAGINATES
+// ("Events 1/2", "Events 2/2"...) when there's more content than fits at a
+// readable size, instead of shrinking text or scrolling.
+// "home" is intentionally excluded: it stacks News + Coming Up (duplicating
+// the standalone announcements/calendar slides) with no fit-layer or
+// pagination of its own, so it can't be sized safely for a fixed screen.
 // buildSlideQueue() turns this into the actual slide list.
-const SLIDESHOW_SECTIONS = ['home','announcements','calendar','lunch','bell'];
+const SLIDESHOW_SECTIONS = ['announcements','calendar','lunch','bell'];
 const SLIDESHOW_SECONDS = 7;
 // Text is never shrunk below this multiplier — below it, we paginate instead.
 // (Kept as a floor so a single item never gets absurdly huge, not as a
@@ -2149,7 +2152,7 @@ const SLIDE_CONFIG = {
 };
 
 function getPagesFor(section){
-  if(section!=='calendar' && section!=='lunch' && section!=='bell') return [null]; // non-paginated slides (home, announcements)
+  if(section!=='calendar' && section!=='lunch' && section!=='bell') return [null]; // non-paginated slides (announcements)
   if(_pageCache[section]) return _pageCache[section];
   computePagesFor(section);
   return _pageCache[section];

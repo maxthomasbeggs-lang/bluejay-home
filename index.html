@@ -265,13 +265,19 @@
   body.slideshow-mode .cal-grid-wrap,
   body.slideshow-mode #menu-pdf-status,
   body.slideshow-mode .hero-sub,
+  body.slideshow-mode #sec-calendar .section-top,
+  body.slideshow-mode #sec-lunch .section-top,
+  body.slideshow-mode #sec-bell .section-top,
   body.slideshow-mode .section-top p { display:none !important; }
   /* ── Slideshow sizing: fluid, viewport-height-based — scales continuously to ANY screen
      (phone landscape, Chromebook, TV) instead of jumping between fixed breakpoints.
      .section gets permanent bottom padding so the fixed dots bar can never overlap content. */
   body.slideshow-mode .app-shell { height:100vh; overflow:hidden; }
   body.slideshow-mode .app-main { padding-bottom:0; height:100vh; flex:none; display:flex; flex-direction:column; justify-content:center; overflow:hidden; min-height:0; }
-  body.slideshow-mode .section { max-width:1300px; width:100%; max-height:100vh; min-height:0; padding-top:clamp(4px,1vh,10px); padding-bottom:clamp(48px,9vh,64px); box-sizing:border-box; overflow:hidden; }
+  /* height (not max-height) locks .section to a real, stable 100vh box so
+     slideAvailHeight()'s clientHeight reading is a fixed truth, not a number
+     that moves depending on how tall the content inside happens to be. */
+  body.slideshow-mode .section { max-width:1300px; width:100%; height:100vh; min-height:0; padding-top:clamp(4px,1vh,10px); padding-bottom:clamp(48px,9vh,64px); box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; justify-content:center; }
 
   /* ── Fit-to-screen engine ─────────────────────────────────────
      Slideshow-only "today" views live inside their sections but stay hidden
@@ -356,7 +362,8 @@
   body.slideshow-mode .menu-day { padding:clamp(8px,1.8vh,16px); }
   body.slideshow-mode .menu-day h4 { font-size:clamp(12px,1.8vh,17px); margin-bottom:clamp(4px,1vh,10px); padding-bottom:clamp(4px,0.8vh,8px); }
   body.slideshow-mode .menu-item { font-size:clamp(9.5px,1.4vh,15.5px); margin-bottom:clamp(2px,0.6vh,7px); }
-  body.slideshow-mode table { font-size:clamp(10.5px,1.6vh,16px); }
+  body.slideshow-mode table { font-size:calc(clamp(10.5px,1.6vh,16px) * var(--fit)); }
+  body.slideshow-mode #sec-bell th, body.slideshow-mode #sec-bell td { padding:calc(8px * var(--fit)) calc(10px * var(--fit)); }
   body.slideshow-mode th { font-size:clamp(8px,1.1vh,12px); padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
   body.slideshow-mode td { padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
   body.slideshow-mode .empty-state { padding:clamp(18px,4vh,60px) 20px; }
@@ -518,7 +525,7 @@
     <div class="section-top-left"><h2>Bell <span>Schedule</span></h2><p>Regular day period times</p></div>
     <button class="btn btn-primary" onclick="requireAuth(()=>openModal('modal-add-period'))">+ Add Period</button>
   </div>
-  <div class="table-wrap">
+  <div class="fit-layer table-wrap">
     <table>
       <thead><tr><th>Period</th><th>Passing Time (min)</th><th>Start</th><th>End</th><th></th></tr></thead>
       <tbody id="bellBody"></tbody>

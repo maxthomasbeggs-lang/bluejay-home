@@ -287,7 +287,8 @@
      BIG text and a packed day shrinks to fit — never scrolling. */
   .slideshow-only { display:none; }
   body.slideshow-mode #sec-lunch .menu-week,
-  body.slideshow-mode #sec-calendar #calendarList { display:none !important; }
+  body.slideshow-mode #sec-calendar #calendarList,
+  body.slideshow-mode #sec-bell .table-wrap { display:none !important; }
   body.slideshow-mode .slideshow-only { display:block; }
 
   /* The fit layer is what actually gets measured + scaled. Everything the
@@ -330,6 +331,12 @@
     font-family:'Fredoka',sans-serif; font-weight:500; color:var(--text);
     font-size:calc(clamp(16px,2.8vh,38px) * var(--fit)); line-height:1.25; }
   .slide-lunch-item::before { content:'•'; color:var(--gold-light); flex-shrink:0; }
+  .fit-layer-table { max-width:900px; margin:0 auto; width:100%; }
+  .fit-layer-table table { width:100%; border-collapse:collapse; }
+  .fit-layer-table th { text-align:left; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px;
+    font-size:calc(clamp(11px,1.5vh,15px) * var(--fit)); padding:calc(6px * var(--fit)) calc(10px * var(--fit)); border-bottom:1px solid var(--border2); }
+  .fit-layer-table td { font-family:'Fredoka',sans-serif; font-weight:600; color:var(--text);
+    font-size:calc(clamp(14px,2.2vh,26px) * var(--fit)); padding:calc(8px * var(--fit)) calc(10px * var(--fit)); border-bottom:1px solid var(--border); }
   .slide-empty { text-align:center; color:var(--text2); font-family:'Fredoka',sans-serif;
     font-size:calc(clamp(16px,2.6vh,32px) * var(--fit)); padding:calc(clamp(20px,4vh,60px) * var(--fit)) 20px; }
   .slide-empty .se-icon { font-size:calc(clamp(30px,6vh,70px) * var(--fit)); display:block;
@@ -362,8 +369,7 @@
   body.slideshow-mode .menu-day { padding:clamp(8px,1.8vh,16px); }
   body.slideshow-mode .menu-day h4 { font-size:clamp(12px,1.8vh,17px); margin-bottom:clamp(4px,1vh,10px); padding-bottom:clamp(4px,0.8vh,8px); }
   body.slideshow-mode .menu-item { font-size:clamp(9.5px,1.4vh,15.5px); margin-bottom:clamp(2px,0.6vh,7px); }
-  body.slideshow-mode table { font-size:calc(clamp(10.5px,1.6vh,16px) * var(--fit)); }
-  body.slideshow-mode #sec-bell th, body.slideshow-mode #sec-bell td { padding:calc(8px * var(--fit)) calc(10px * var(--fit)); }
+
   body.slideshow-mode th { font-size:clamp(8px,1.1vh,12px); padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
   body.slideshow-mode td { padding:clamp(6px,1.2vh,14px) clamp(8px,1.4vh,16px); }
   body.slideshow-mode .empty-state { padding:clamp(18px,4vh,60px) 20px; }
@@ -525,12 +531,13 @@
     <div class="section-top-left"><h2>Bell <span>Schedule</span></h2><p>Regular day period times</p></div>
     <button class="btn btn-primary" onclick="requireAuth(()=>openModal('modal-add-period'))">+ Add Period</button>
   </div>
-  <div class="fit-layer table-wrap">
+  <div class="table-wrap">
     <table>
       <thead><tr><th>Period</th><th>Passing Time (min)</th><th>Start</th><th>End</th><th></th></tr></thead>
       <tbody id="bellBody"></tbody>
     </table>
   </div>
+  <div class="slideshow-only" id="slideBellToday"></div>
 </div>
 
 <!-- CALENDAR -->
@@ -2053,29 +2060,29 @@ function renderAll(){
 }
 
 // ── Slideshow mode (for iPhone → AirPlay → Apple TV screen mirroring) ─
-// The base running order. calendar + lunch show ONLY today, and may expand
-// into multiple pages (Option B) when a day has more events than fit at a
-// readable size. buildSlideQueue() turns this into the actual slide list.
+// The base running order. calendar + lunch + bell show ONLY today, and each
+// AUTO-PAGINATES ("Events 1/2", "Events 2/2"...) when there's more content
+// than fits at a readable size, instead of shrinking text or scrolling.
+// buildSlideQueue() turns this into the actual slide list.
 const SLIDESHOW_SECTIONS = ['home','announcements','calendar','lunch','bell'];
 const SLIDESHOW_SECONDS = 7;
-// Never shrink event text below this multiplier — below it, we paginate instead.
+// Text is never shrunk below this multiplier — below it, we paginate instead.
+// (Kept as a floor so a single item never gets absurdly huge, not as a
+// "shrink to avoid overflow" mechanism.)
 const FIT_MIN = 0.62;
 let slideshowTimer = null;
 let slideshowIdx = 0;
-// slideQueue: array of {section, page, pages}. page/pages only meaningful for
-// paginated sections (calendar). Rebuilt each time the slideshow (re)starts.
+// slideQueue: array of {section, page, pages}. page/pages meaningful for
+// every paginated section (calendar, lunch, bell). Rebuilt each time the
+// slideshow (re)starts.
 let slideQueue = [];
 
 function buildSlideQueue(){
   slideQueue = [];
-  _todayEventPages = null; // force a fresh measured pagination
+  _pageCache = {}; // force fresh measured pagination for every section
   SLIDESHOW_SECTIONS.forEach(section=>{
-    if(section==='calendar'){
-      const pages = Math.max(1, getTodayEventPages().length);
-      for(let p=0;p<pages;p++) slideQueue.push({section, page:p, pages});
-    } else {
-      slideQueue.push({section, page:0, pages:1});
-    }
+    const pages = Math.max(1, getPagesFor(section).length);
+    for(let p=0;p<pages;p++) slideQueue.push({section, page:p, pages});
   });
 }
 
@@ -2090,9 +2097,10 @@ function slideshowGoTo(i){
   slideshowIdx = ((i % slideQueue.length) + slideQueue.length) % slideQueue.length;
   const slide = slideQueue[slideshowIdx];
   showSection(slide.section);
-  // Render the day-only view (with the right page) BEFORE fitting.
+  // Render the day-only, correct-page view BEFORE fitting.
   if(slide.section==='calendar') renderSlideCalToday(slide.page, slide.pages);
-  if(slide.section==='lunch') renderSlideMenuToday();
+  if(slide.section==='lunch') renderSlideMenuToday(slide.page, slide.pages);
+  if(slide.section==='bell') renderSlideBellToday(slide.page, slide.pages);
   renderSlideshowDots();
   // Fit after the browser has laid the new content out.
   requestAnimationFrame(()=>requestAnimationFrame(fitActiveSlide));
@@ -2110,14 +2118,41 @@ function todaysEventItems(){
     });
 }
 
-// Measured pagination cache. Rebuilt by computeTodayEventPages() and read by
-// everything else so the queue, the dots, and the render all agree.
-let _todayEventPages = null;
+function todaysLunchItems(){
+  if(!menu.weeks || !menu.weeks.length) return null; // null = no menu uploaded
+  const today = new Date(); today.setHours(0,0,0,0);
+  for(const week of menu.weeks){
+    for(const d of (week.days||[])){
+      const dt = parseMenuDate(d.date);
+      if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
+    }
+  }
+  return []; // menu exists but nothing listed for today (weekend / no-school day)
+}
 
-function getTodayEventPages(){
-  if(_todayEventPages) return _todayEventPages;
-  computeTodayEventPages();
-  return _todayEventPages;
+function bellPeriodItems(){
+  return (bell||[]);
+}
+
+// ── Generic measured pagination ────────────────────────────────
+// One engine, reused by calendar/lunch/bell: render items into the REAL
+// slide DOM, measure natural height vs. available height; when adding the
+// next item would push the scale below FIT_MIN, close the page and start a
+// new one. This is what makes "too much → extra slide" work for every
+// section, not just the calendar.
+let _pageCache = {};
+
+const SLIDE_CONFIG = {
+  calendar: { host:'slideCalToday', section:'sec-calendar', items:todaysEventItems, render:renderEventsFitLayer },
+  lunch:    { host:'slideMenuToday', section:'sec-lunch', items:()=> todaysLunchItems()||[], render:renderLunchFitLayer },
+  bell:     { host:'slideBellToday', section:'sec-bell', items:bellPeriodItems, render:renderBellFitLayer },
+};
+
+function getPagesFor(section){
+  if(section!=='calendar' && section!=='lunch' && section!=='bell') return [null]; // non-paginated slides (home, announcements)
+  if(_pageCache[section]) return _pageCache[section];
+  computePagesFor(section);
+  return _pageCache[section];
 }
 
 // Compute how the available height in a slide splits (used by both the
@@ -2130,23 +2165,19 @@ function slideAvailHeight(section, layer){
     (layer.offsetTop - section.offsetTop - padTop);
 }
 
-// Split today's events into pages by MEASURING, not guessing. We render events
-// into the real slide container one more at a time; when the number on the
-// page can no longer fit at or above FIT_MIN scale, we close the page and start
-// a new one. This is what makes "too much → extra slide" actually work: the
-// same fit math that sizes the slide also decides where the page breaks.
-function computeTodayEventPages(){
-  const items = todaysEventItems();
-  if(!items.length){ _todayEventPages = [[]]; return; }
+function computePagesFor(sectionName){
+  const cfg = SLIDE_CONFIG[sectionName];
+  const items = cfg.items();
+  if(!items.length){ _pageCache[sectionName] = [[]]; return; }
 
-  const host = document.getElementById('slideCalToday');
-  const section = document.getElementById('sec-calendar');
+  const host = document.getElementById(cfg.host);
+  const section = document.getElementById(cfg.section);
   // If we can't measure (e.g. not in slideshow DOM yet), fall back to a
   // conservative fixed split so nothing is lost.
   if(!host || !section){
     const per = 5, pages=[];
     for(let i=0;i<items.length;i+=per) pages.push(items.slice(i,i+per));
-    _todayEventPages = pages; return;
+    _pageCache[sectionName] = pages; return;
   }
 
   const wasHidden = !document.body.classList.contains('slideshow-mode');
@@ -2155,7 +2186,7 @@ function computeTodayEventPages(){
   section.classList.add('active');
 
   const measurePageScale = (subset)=>{
-    host.innerHTML = renderEventsFitLayer(subset, 1, 1); // page/pages label irrelevant here
+    host.innerHTML = cfg.render(subset, 1, 1); // page/pages label irrelevant here
     const layer = host.querySelector('.fit-layer');
     if(!layer) return 1;
     layer.style.setProperty('--fit','1');
@@ -2186,7 +2217,7 @@ function computeTodayEventPages(){
   if(prevActive){ section.classList.remove('active'); prevActive.classList.add('active'); }
   if(wasHidden) document.body.classList.remove('slideshow-mode');
 
-  _todayEventPages = pages.length ? pages : [[]];
+  _pageCache[sectionName] = pages.length ? pages : [[]];
 }
 
 // Build just the events fit-layer HTML (shared by the paginator's measurement
@@ -2220,37 +2251,15 @@ function renderEventsFitLayer(items, page, totalPages){
   </div>`;
 }
 
-function todaysLunchItems(){
-  if(!menu.weeks || !menu.weeks.length) return null; // null = no menu uploaded
-  const today = new Date(); today.setHours(0,0,0,0);
-  for(const week of menu.weeks){
-    for(const d of (week.days||[])){
-      const dt = parseMenuDate(d.date);
-      if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
-    }
-  }
-  return []; // menu exists but nothing listed for today (weekend / no-school day)
-}
-
-// ── Render: today's events slide ──────────────────────────────
-function renderSlideCalToday(page, pages){
-  const host = document.getElementById('slideCalToday');
-  if(!host) return;
-  const allPages = getTodayEventPages();
-  const items = allPages[page] || [];
-  const totalPages = pages || allPages.length;
-  host.innerHTML = renderEventsFitLayer(items, page, totalPages);
-}
-
-// ── Render: today's lunch slide ───────────────────────────────
-function renderSlideMenuToday(){
-  const host = document.getElementById('slideMenuToday');
-  if(!host) return;
+// Build just the lunch fit-layer HTML (shared by the paginator's measurement
+// pass and the real render).
+function renderLunchFitLayer(items, page, totalPages){
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const items = todaysLunchItems();
+  const pageLabel = totalPages>1 ? `Today's Lunch · ${page+1} of ${totalPages}` : "Today's Lunch";
+  const rawItems = todaysLunchItems();
   let inner;
-  if(items===null){
+  if(rawItems===null){
     inner = `<div class="slide-empty"><span class="se-icon">🍽️</span>No menu uploaded yet</div>`;
   } else if(!items.length){
     inner = `<div class="slide-empty"><span class="se-icon">🍽️</span>No lunch listed for today</div>`;
@@ -2259,11 +2268,59 @@ function renderSlideMenuToday(){
       items.map(it=>`<div class="slide-lunch-item">${it}</div>`).join('') +
       `</div></div>`;
   }
-  host.innerHTML = `<div class="fit-layer">
+  return `<div class="fit-layer">
     <div class="slide-day-sub">${dateLabel}</div>
-    <div class="slide-day-title">Today's Lunch</div>
+    <div class="slide-day-title">${pageLabel}</div>
     ${inner}
   </div>`;
+}
+
+// Build just the bell-schedule fit-layer HTML (shared by the paginator's
+// measurement pass and the real render).
+function renderBellFitLayer(items, page, totalPages){
+  const pageLabel = totalPages>1 ? `Bell Schedule · ${page+1} of ${totalPages}` : "Bell Schedule";
+  let inner;
+  if(!items.length){
+    inner = `<div class="slide-empty"><span class="se-icon">🔔</span>No periods added yet</div>`;
+  } else {
+    inner = `<div class="fit-layer-table"><table><thead><tr><th>Period</th><th>Class</th><th>Start</th><th>End</th></tr></thead><tbody>` +
+      items.map(p=>`<tr><td>${p.period||''}</td><td>${p.cls||''}</td><td>${p.start||''}</td><td>${p.end||''}</td></tr>`).join('') +
+      `</tbody></table></div>`;
+  }
+  return `<div class="fit-layer">
+    <div class="slide-day-title">${pageLabel}</div>
+    ${inner}
+  </div>`;
+}
+
+// ── Render: today's events slide ──────────────────────────────
+function renderSlideCalToday(page, pages){
+  const host = document.getElementById('slideCalToday');
+  if(!host) return;
+  const allPages = getPagesFor('calendar');
+  const items = allPages[page] || [];
+  const totalPages = pages || allPages.length;
+  host.innerHTML = renderEventsFitLayer(items, page, totalPages);
+}
+
+// ── Render: today's lunch slide ───────────────────────────────
+function renderSlideMenuToday(page, pages){
+  const host = document.getElementById('slideMenuToday');
+  if(!host) return;
+  const allPages = getPagesFor('lunch');
+  const items = allPages[page] || [];
+  const totalPages = pages || allPages.length;
+  host.innerHTML = renderLunchFitLayer(items, page, totalPages);
+}
+
+// ── Render: today's bell schedule slide ────────────────────────
+function renderSlideBellToday(page, pages){
+  const host = document.getElementById('slideBellToday');
+  if(!host) return;
+  const allPages = getPagesFor('bell');
+  const items = allPages[page] || [];
+  const totalPages = pages || allPages.length;
+  host.innerHTML = renderBellFitLayer(items, page, totalPages);
 }
 
 // ── Fit-to-screen engine ──────────────────────────────────────

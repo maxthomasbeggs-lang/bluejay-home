@@ -327,7 +327,7 @@
     <button class="nav-link" onclick="showSection('calendar')"><span class="nav-icon">📅</span><span class="nav-label">Calendar</span></button>
   </nav>
   <div class="sidebar-footer">
-    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through News, Events, Lunch & Classes for screen mirroring">
+    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through News, Events, Lunch, Dinner, AFS & Classes for screen mirroring">
       🖥️ Slideshow Mode
     </button>
     <button id="reset-data-btn" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
@@ -419,30 +419,94 @@
   <div class="card-grid" id="clubsGrid"></div>
 </div>
 
-<!-- LUNCH -->
+<!-- LUNCH / DINNER / AFS -->
 <div class="section" id="sec-lunch">
   <div class="section-top">
-    <div class="section-top-left"><h2>Lunch <span>Menu</span></h2><p>Upload the monthly menu PDF and it'll be split into weeks automatically</p></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input').click())">📄 Upload Monthly PDF</button>
-      <button class="btn btn-ghost" onclick="requireAuth(openAddLunchDay)">➕ Add Lunch</button>
-      <button id="clearExpiredMenuBtn" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(clearExpiredMenu)">🗑️ Clear Expired Menu</button>
+    <div class="section-top-left">
+      <h2 id="mealSectionTitle">Lunch <span>Menu</span></h2>
+      <p id="mealSectionSub">Upload the monthly menu PDF and it'll be split into weeks automatically</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="mealTabBtn-lunch" class="btn btn-primary" onclick="switchMealView('lunch')">🍽️ Lunch</button>
+      <button id="mealTabBtn-dinner" class="btn btn-ghost" onclick="switchMealView('dinner')">🌙 Dinner</button>
+      <button id="mealTabBtn-afs" class="btn btn-ghost" onclick="switchMealView('afs')">🍎 AFS</button>
     </div>
   </div>
 
-  <input type="file" id="menu-pdf-input" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event)" />
-  <div id="menu-pdf-status" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
-
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(-1)" title="Previous week">‹</button>
-    <div style="flex:1;text-align:center;min-width:150px">
-      <div id="lunchWeekLabel" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
-      <div id="lunchWeekSub" style="font-size:11px;color:var(--text3)"></div>
+  <!-- LUNCH VIEW -->
+  <div id="mealView-lunch">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-lunch').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost" onclick="requireAuth(()=>openAddMealDay('lunch'))">➕ Add Lunch</button>
+      <button id="clearExpiredMenuBtn-lunch" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('lunch'))">🗑️ Clear Expired Menu</button>
     </div>
-    <button class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek(1)" title="Next week">›</button>
+    <input type="file" id="menu-pdf-input-lunch" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event,'lunch')" />
+    <div id="menu-pdf-status-lunch" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button id="lunchPrevBtn-lunch" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('lunch',-1)" title="Previous week">‹</button>
+      <div style="flex:1;text-align:center;min-width:150px">
+        <div id="lunchWeekLabel-lunch" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
+        <div id="lunchWeekSub-lunch" style="font-size:11px;color:var(--text3)"></div>
+      </div>
+      <button id="lunchNextBtn-lunch" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('lunch',1)" title="Next week">›</button>
+    </div>
+    <div id="lunchBackWrap-lunch" style="display:none;text-align:center;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="backToWeekView('lunch')">← Back to Week View</button>
+    </div>
+
+    <div class="menu-week" id="menuGrid-lunch"></div>
   </div>
 
-  <div class="menu-week" id="menuGrid"></div>
+  <!-- DINNER VIEW -->
+  <div id="mealView-dinner" style="display:none">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-dinner').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost" onclick="requireAuth(()=>openAddMealDay('dinner'))">➕ Add Dinner</button>
+      <button id="clearExpiredMenuBtn-dinner" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('dinner'))">🗑️ Clear Expired Menu</button>
+    </div>
+    <input type="file" id="menu-pdf-input-dinner" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event,'dinner')" />
+    <div id="menu-pdf-status-dinner" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button id="lunchPrevBtn-dinner" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('dinner',-1)" title="Previous week">‹</button>
+      <div style="flex:1;text-align:center;min-width:150px">
+        <div id="lunchWeekLabel-dinner" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
+        <div id="lunchWeekSub-dinner" style="font-size:11px;color:var(--text3)"></div>
+      </div>
+      <button id="lunchNextBtn-dinner" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('dinner',1)" title="Next week">›</button>
+    </div>
+    <div id="lunchBackWrap-dinner" style="display:none;text-align:center;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="backToWeekView('dinner')">← Back to Week View</button>
+    </div>
+
+    <div class="menu-week" id="menuGrid-dinner"></div>
+  </div>
+
+  <!-- AFS VIEW -->
+  <div id="mealView-afs" style="display:none">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-afs').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost" onclick="requireAuth(()=>openAddMealDay('afs'))">➕ Add Snack</button>
+      <button id="clearExpiredMenuBtn-afs" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('afs'))">🗑️ Clear Expired Menu</button>
+    </div>
+    <input type="file" id="menu-pdf-input-afs" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event,'afs')" />
+    <div id="menu-pdf-status-afs" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button id="lunchPrevBtn-afs" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('afs',-1)" title="Previous week">‹</button>
+      <div style="flex:1;text-align:center;min-width:150px">
+        <div id="lunchWeekLabel-afs" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
+        <div id="lunchWeekSub-afs" style="font-size:11px;color:var(--text3)"></div>
+      </div>
+      <button id="lunchNextBtn-afs" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('afs',1)" title="Next week">›</button>
+    </div>
+    <div id="lunchBackWrap-afs" style="display:none;text-align:center;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="backToWeekView('afs')">← Back to Week View</button>
+    </div>
+
+    <div class="menu-week" id="menuGrid-afs"></div>
+  </div>
 </div>
 
 <!-- BELL SCHEDULE -->
@@ -480,7 +544,6 @@
       <span><span class="cal-dot school"></span> Events</span>
       <span><span class="cal-dot sports"></span> Sports</span>
       <span><span class="cal-dot clubs"></span> Clubs</span>
-      <span><span class="cal-dot lunch"></span> Lunch</span>
     </div>
     <div id="calDayDetails" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
       <div id="calDayDetailsTitle" style="font-family:'Fredoka',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;"></div>
@@ -545,12 +608,13 @@
 
 <div class="modal-bg" id="modal-add-lunch-day">
   <div class="modal">
-    <h2>Add Lunch (Single Day)</h2>
-    <div class="field"><label>Date</label><input id="fl-date" type="date" /></div>
+    <h2 id="lunch-day-modal-title">Add Lunch (Single Day)</h2>
+    <input type="hidden" id="fl-meal" value="lunch" />
+    <div class="field"><label>Date</label><input id="fl-date" type="date" /><small style="color:var(--text3)">Any day, including weekends</small></div>
     <div class="field"><label>Menu Items</label><textarea id="fl-items" placeholder="e.g. Cheese Pizza, Garden Salad, Fruit Cup"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-lunch-day')">Cancel</button>
-      <button class="btn btn-primary" onclick="addLunchDay()">Add Lunch</button>
+      <button class="btn btn-primary" id="lunch-day-modal-save-btn" onclick="addMealDay()">Add Lunch</button>
     </div>
   </div>
 </div>
@@ -724,10 +788,16 @@ CREATE TABLE IF NOT EXISTS school_state (
   teams         JSONB NOT NULL DEFAULT '[]',
   clubs         JSONB NOT NULL DEFAULT '[]',
   menu          JSONB NOT NULL DEFAULT '{}',
+  "dinnerMenu"  JSONB NOT NULL DEFAULT '{}',
+  "afsMenu"     JSONB NOT NULL DEFAULT '{}',
   bell          JSONB NOT NULL DEFAULT '[]',
   events        JSONB NOT NULL DEFAULT '[]',
   meta          JSONB NOT NULL DEFAULT '{}'
 );
+
+-- If you already created this table before Dinner/AFS existed, run this once:
+-- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "dinnerMenu" JSONB NOT NULL DEFAULT '{}';
+-- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "afsMenu" JSONB NOT NULL DEFAULT '{}';
 
 INSERT INTO school_state (id) VALUES (1) ON CONFLICT DO NOTHING;
 
@@ -787,8 +857,13 @@ const DEFAULT_ANNOUNCEMENTS = [
 const DEFAULT_EVENTS = [];
 
 // ── In-memory state ──────────────────────────────────────────
-let announcements=[], teams=[], clubs=[], bell=[], events=[], menu=null;
-let currentWeekIdx = 0;
+let announcements=[], teams=[], clubs=[], bell=[], events=[], menu=null, dinnerMenu=null, afsMenu=null;
+let mealView = 'lunch'; // 'lunch' | 'dinner' (dinner view shows both Dinner & AFS)
+const MEAL_STATE = {
+  lunch: { get menu(){return menu;}, set menu(v){menu=v;}, weekIdx:0, viewDay:null },
+  dinner:{ get menu(){return dinnerMenu;}, set menu(v){dinnerMenu=v;}, weekIdx:0, viewDay:null },
+  afs:   { get menu(){return afsMenu;}, set menu(v){afsMenu=v;}, weekIdx:0, viewDay:null },
+};
 let nextAid=2, nextTid=4, nextGid=1, nextCid=4, nextPid=8, nextEid=1;
 
 // ── Save to Supabase ─────────────────────────────────────────
@@ -796,7 +871,7 @@ async function saveAll() {
   if (!sb) { saveLocalStorage(); setSyncStatus('ok','Offline'); return; }
   setSyncStatus('syncing','Saving…');
   const { error } = await sb.from('school_state').upsert({
-    id:1, announcements, teams, clubs, menu, bell, events,
+    id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events,
     meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
   });
   if (error) { console.error('SAVE ERROR:', JSON.stringify(error)); setSyncStatus('error','Error'); }
@@ -804,7 +879,7 @@ async function saveAll() {
 
 function saveLocalStorage(){
   try{
-    const state = { announcements, teams, clubs, menu, bell, events, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
+    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
     // Note: localStorage is used only as an offline fallback when Supabase isn't configured.
     window.__rmsStateFallback = state;
   }catch(e){}
@@ -821,7 +896,7 @@ async function resetAllData() {
     '• Announcements\n' +
     '• Sports teams & games\n' +
     '• Clubs\n' +
-    '• Lunch menu\n' +
+    '• Lunch, Dinner & AFS menus\n' +
     '• Bell schedule\n' +
     '• Calendar events\n\n' +
     'This cannot be undone. Continue?'
@@ -829,7 +904,10 @@ async function resetAllData() {
   if (!sure) return;
   announcements=[]; teams=[]; clubs=[]; bell=[]; events=[];
   menu = { weeks: [] };
-  currentWeekIdx = 0;
+  dinnerMenu = { weeks: [] };
+  afsMenu = { weeks: [] };
+  MEAL_STATE.lunch.weekIdx = MEAL_STATE.dinner.weekIdx = MEAL_STATE.afs.weekIdx = 0;
+  MEAL_STATE.lunch.viewDay = MEAL_STATE.dinner.viewDay = MEAL_STATE.afs.viewDay = null;
   nextAid=1; nextTid=1; nextGid=1; nextCid=1; nextPid=1; nextEid=1;
   await saveAll();
   renderAll();
@@ -864,7 +942,9 @@ function applyState(row) {
     bell    = DEFAULT_BELL.map(b=>({...b}));
     events  = DEFAULT_EVENTS.map(e=>({...e}));
     menu    = JSON.parse(JSON.stringify(DEFAULT_MENU));
-    currentWeekIdx = 0;
+    dinnerMenu = { weeks: [] };
+    afsMenu = { weeks: [] };
+    MEAL_STATE.lunch.weekIdx = MEAL_STATE.dinner.weekIdx = MEAL_STATE.afs.weekIdx = 0;
     nextAid=2; nextTid=4; nextGid=1; nextCid=4; nextPid=8; nextEid=1;
     saveAll();
     renderAll(); hideLoader();
@@ -876,7 +956,11 @@ function applyState(row) {
   bell    = row.bell    && row.bell.length    ? row.bell    : DEFAULT_BELL;
   events  = row.events  || [];
   menu    = normalizeMenu(row.menu);
-  currentWeekIdx = pickCurrentWeekIndex(menu.weeks);
+  dinnerMenu = normalizeMenu(row.dinnerMenu);
+  afsMenu = normalizeMenu(row.afsMenu);
+  MEAL_STATE.lunch.weekIdx = pickCurrentWeekIndex(menu.weeks);
+  MEAL_STATE.dinner.weekIdx = pickCurrentWeekIndex(dinnerMenu.weeks);
+  MEAL_STATE.afs.weekIdx = pickCurrentWeekIndex(afsMenu.weeks);
   if (row.meta) {
     nextAid = row.meta.nextAid || nextAid;
     nextTid = row.meta.nextTid || nextTid;
@@ -1307,28 +1391,57 @@ async function removeClub(id){
   await saveAll(); renderAll();
 }
 
-// ── Render: Lunch Menu (week-navigable) ───────────────────────
+// ── Render: Lunch / Dinner / AFS Menus (week-navigable) ────────
+const MEAL_LABELS = { lunch:'lunch', dinner:'dinner', afs:'snack' };
+const MEAL_ICON = { lunch:'🍽️', dinner:'🌙', afs:'🍎' };
+function mealMenu(meal){ return MEAL_STATE[meal].menu; }
+function setMealMenu(meal, val){ MEAL_STATE[meal].menu = val; }
 function parseMenuDate(dateStr){
   if(!dateStr) return null;
   const d = new Date(dateStr+' '+new Date().getFullYear());
   return isNaN(d) ? null : d;
 }
-function renderMenu(){
-  const grid = document.getElementById('menuGrid');
-  const labelEl = document.getElementById('lunchWeekLabel');
-  const subEl = document.getElementById('lunchWeekSub');
-  const clearBtn = document.getElementById('clearExpiredMenuBtn');
-  if(clearBtn) clearBtn.style.display = menuHasExpired() ? 'inline-flex' : 'none';
-  if(!menu.weeks || !menu.weeks.length){
-    grid.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No lunch menu yet.<br>Upload the monthly PDF above to get started.</p></div>';
+function renderMenu(meal){
+  const st = MEAL_STATE[meal];
+  const m = mealMenu(meal);
+  const grid = document.getElementById('menuGrid-'+meal);
+  const labelEl = document.getElementById('lunchWeekLabel-'+meal);
+  const subEl = document.getElementById('lunchWeekSub-'+meal);
+  const clearBtn = document.getElementById('clearExpiredMenuBtn-'+meal);
+  const prevBtn = document.getElementById('lunchPrevBtn-'+meal);
+  const nextBtn = document.getElementById('lunchNextBtn-'+meal);
+  const backWrap = document.getElementById('lunchBackWrap-'+meal);
+  if(!grid) return;
+  if(clearBtn) clearBtn.style.display = (!st.viewDay && menuHasExpired(meal)) ? 'inline-flex' : 'none';
+
+  if(st.viewDay){
+    // Focused single-day view — hides week navigation.
+    if(prevBtn) prevBtn.style.display='none';
+    if(nextBtn) nextBtn.style.display='none';
+    if(backWrap) backWrap.style.display='block';
+    labelEl.textContent = st.viewDay.dayName + (st.viewDay.dateLabel ? ' · '+st.viewDay.dateLabel : '');
+    subEl.textContent = 'Single day';
+    const items = st.viewDay.items && st.viewDay.items.length
+      ? st.viewDay.items.map(it=>`<div class="menu-item"><span>${it}</span></div>`).join('')
+      : '<div class="menu-item" style="color:var(--text3)">—</div>';
+    grid.innerHTML = `<div class="menu-day is-today" style="grid-column:1/-1;max-width:320px;margin:0 auto">
+      <h4>${st.viewDay.dayName}${st.viewDay.dateLabel?' · '+st.viewDay.dateLabel:''}</h4>${items}</div>`;
+    return;
+  }
+  if(prevBtn) prevBtn.style.display='';
+  if(nextBtn) nextBtn.style.display='';
+  if(backWrap) backWrap.style.display='none';
+
+  if(!m || !m.weeks || !m.weeks.length){
+    grid.innerHTML=`<div class="empty-state"><div class="icon">${MEAL_ICON[meal]}</div><p>No ${MEAL_LABELS[meal]} menu yet.<br>Upload the monthly PDF above to get started.</p></div>`;
     labelEl.textContent='No weeks yet';
     subEl.textContent='';
     return;
   }
-  currentWeekIdx = Math.max(0, Math.min(currentWeekIdx, menu.weeks.length-1));
-  const week = menu.weeks[currentWeekIdx];
-  labelEl.textContent = week.weekOf || ('Week '+(currentWeekIdx+1));
-  subEl.textContent = 'Week '+(currentWeekIdx+1)+' of '+menu.weeks.length;
+  st.weekIdx = Math.max(0, Math.min(st.weekIdx, m.weeks.length-1));
+  const week = m.weeks[st.weekIdx];
+  labelEl.textContent = week.weekOf || ('Week '+(st.weekIdx+1));
+  subEl.textContent = 'Week '+(st.weekIdx+1)+' of '+m.weeks.length;
   const today = new Date(); today.setHours(0,0,0,0);
   grid.innerHTML = WEEKDAYS.map(dayName=>{
     const d = (week.days||[]).find(x=>x.day===dayName) || {items:[]};
@@ -1340,10 +1453,38 @@ function renderMenu(){
     return `<div class="menu-day${isToday?' is-today':''}"><h4>${dayName}${d.date?' · '+d.date:''}${isToday?' <span class="today-badge">Today</span>':''}</h4>${items}</div>`;
   }).join('');
 }
-function shiftWeek(delta){
-  if(!menu.weeks || !menu.weeks.length) return;
-  currentWeekIdx = (currentWeekIdx + delta + menu.weeks.length) % menu.weeks.length;
-  renderMenu();
+function renderAllMeals(){
+  renderMenu('lunch'); renderMenu('dinner'); renderMenu('afs');
+}
+function backToWeekView(meal){
+  MEAL_STATE[meal].viewDay = null;
+  renderMenu(meal);
+}
+function shiftWeek(meal, delta){
+  const st = MEAL_STATE[meal];
+  const m = mealMenu(meal);
+  if(st.viewDay) return;
+  if(!m || !m.weeks || !m.weeks.length) return;
+  st.weekIdx = (st.weekIdx + delta + m.weeks.length) % m.weeks.length;
+  renderMenu(meal);
+}
+const MEAL_TAB_TITLE = {
+  lunch:  { title: 'Lunch <span>Menu</span>', sub: "Upload the monthly menu PDF and it'll be split into weeks automatically" },
+  dinner: { title: 'Dinner <span>Menu</span>', sub: "Upload the monthly menu PDF and it'll be split into weeks automatically" },
+  afs:    { title: 'After School <span>Snack</span>', sub: "Upload the monthly menu PDF and it'll be split into weeks automatically" },
+};
+function switchMealView(view){
+  mealView = view;
+  ['lunch','dinner','afs'].forEach(v=>{
+    document.getElementById('mealView-'+v).style.display = (v===view) ? '' : 'none';
+    const tabBtn = document.getElementById('mealTabBtn-'+v);
+    if(tabBtn) tabBtn.className = (v===view) ? 'btn btn-primary' : 'btn btn-ghost';
+  });
+  const titleEl = document.getElementById('mealSectionTitle');
+  const subEl = document.getElementById('mealSectionSub');
+  const info = MEAL_TAB_TITLE[view];
+  titleEl.innerHTML = info.title;
+  subEl.textContent = info.sub;
 }
 function findNearestWeekToToday(weeks){
   if(!weeks || !weeks.length) return 0;
@@ -1373,9 +1514,10 @@ function pickCurrentWeekIndex(weeks){
   }
   return findNearestWeekToToday(weeks);
 }
-function getLastMenuDate(){
-  if(!menu.weeks || !menu.weeks.length) return null;
-  const lastWeek = menu.weeks[menu.weeks.length-1];
+function getLastMenuDate(meal){
+  const m = mealMenu(meal);
+  if(!m || !m.weeks || !m.weeks.length) return null;
+  const lastWeek = m.weeks[m.weeks.length-1];
   let maxDate = null;
   (lastWeek.days||[]).forEach(d=>{
     const dt = parseMenuDate(d.date);
@@ -1383,16 +1525,16 @@ function getLastMenuDate(){
   });
   return maxDate;
 }
-function menuHasExpired(){
-  const last = getLastMenuDate();
+function menuHasExpired(meal){
+  const last = getLastMenuDate(meal);
   if(!last) return false;
   const today = new Date(); today.setHours(0,0,0,0);
   return today.getTime() > last.getTime();
 }
-async function clearExpiredMenu(){
+async function clearExpiredMenu(meal){
   if(!confirm('This menu has run through its last listed date. Clear it now and upload a new monthly PDF?')) return;
-  menu.weeks = [];
-  currentWeekIdx = 0;
+  setMealMenu(meal, { weeks: [] });
+  MEAL_STATE[meal].weekIdx = 0;
   await saveAll(); renderAll();
 }
 // Returns the Monday..Friday date range (as Date objects, hours zeroed) for the week containing d.
@@ -1403,12 +1545,20 @@ function weekRangeFor(d){
   const fri = new Date(mon); fri.setDate(mon.getDate()+4);
   return {mon, fri};
 }
-function openAddLunchDay(){
+const MEAL_MODAL_TITLES = { lunch:'Add Lunch (Single Day)', dinner:'Add Dinner (Single Day)', afs:'Add After School Snack (Single Day)' };
+const MEAL_MODAL_BTN = { lunch:'Add Lunch', dinner:'Add Dinner', afs:'Add Snack' };
+const MEAL_ITEM_PLACEHOLDER = { lunch:'e.g. Cheese Pizza, Garden Salad, Fruit Cup', dinner:'e.g. Spaghetti, Garlic Bread, Green Beans', afs:'e.g. Apple Slices, Granola Bar, Milk' };
+function openAddMealDay(meal){
+  document.getElementById('fl-meal').value = meal;
   document.getElementById('fl-date').value='';
   document.getElementById('fl-items').value='';
+  document.getElementById('fl-items').placeholder = MEAL_ITEM_PLACEHOLDER[meal];
+  document.getElementById('lunch-day-modal-title').textContent = MEAL_MODAL_TITLES[meal];
+  document.getElementById('lunch-day-modal-save-btn').textContent = MEAL_MODAL_BTN[meal];
   openModal('modal-add-lunch-day');
 }
-async function addLunchDay(){
+async function addMealDay(){
+  const meal = document.getElementById('fl-meal').value || 'lunch';
   const dateInput = document.getElementById('fl-date').value;
   const itemsRaw = document.getElementById('fl-items').value.trim();
   if(!dateInput) return alert('Please pick a date.');
@@ -1417,39 +1567,45 @@ async function addLunchDay(){
   if(isNaN(d)) return alert('Please pick a valid date.');
   const dayName = d.toLocaleDateString('en-US',{weekday:'long'});
   const dateLabel = dateInputToLabel(dateInput);
-  if(!WEEKDAYS.includes(dayName)){
-    alert('Lunch can only be added for a weekday (Monday–Friday).');
-    return;
-  }
-  menu.weeks = menu.weeks || [];
-  const {mon, fri} = weekRangeFor(d);
-  // Find an existing week whose Mon–Fri range contains this date.
-  let week = menu.weeks.find(w=>{
-    const dates = (w.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean);
-    if(!dates.length) return false;
-    const min = new Date(Math.min(...dates.map(x=>x.getTime())));
-    const max = new Date(Math.max(...dates.map(x=>x.getTime())));
-    return mon>=new Date(min.getFullYear(),min.getMonth(),min.getDate()-6) && mon<=max && fri>=min;
-  }) || menu.weeks.find(w=>{
-    const dates = (w.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean);
-    return dates.some(x=> x.getTime()>=mon.getTime() && x.getTime()<=fri.getTime());
-  });
-  if(!week){
-    week = { weekOf: 'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'}), days: WEEKDAYS.map(dn=>({day:dn, date:'', items:[]})) };
-    menu.weeks.push(week);
-    menu.weeks.sort((a,b)=>{
-      const da=(a.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean)[0];
-      const db=(b.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean)[0];
-      if(!da||!db) return 0;
-      return da-db;
+
+  // Weekdays (Mon–Fri) still get stored into the normal week grid so they show up
+  // correctly if the user later browses weeks; Sat/Sun aren't part of that grid.
+  if(WEEKDAYS.includes(dayName)){
+    let m = mealMenu(meal) || { weeks: [] };
+    m.weeks = m.weeks || [];
+    const {mon, fri} = weekRangeFor(d);
+    let week = m.weeks.find(w=>{
+      const dates = (w.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean);
+      if(!dates.length) return false;
+      const min = new Date(Math.min(...dates.map(x=>x.getTime())));
+      const max = new Date(Math.max(...dates.map(x=>x.getTime())));
+      return mon>=new Date(min.getFullYear(),min.getMonth(),min.getDate()-6) && mon<=max && fri>=min;
+    }) || m.weeks.find(w=>{
+      const dates = (w.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean);
+      return dates.some(x=> x.getTime()>=mon.getTime() && x.getTime()<=fri.getTime());
     });
+    if(!week){
+      week = { weekOf: 'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'}), days: WEEKDAYS.map(dn=>({day:dn, date:'', items:[]})) };
+      m.weeks.push(week);
+      m.weeks.sort((a,b)=>{
+        const da=(a.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean)[0];
+        const db=(b.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean)[0];
+        if(!da||!db) return 0;
+        return da-db;
+      });
+    }
+    week.days = week.days || WEEKDAYS.map(dn=>({day:dn, date:'', items:[]}));
+    let dayEntry = week.days.find(x=>x.day===dayName);
+    if(!dayEntry){ dayEntry = {day:dayName, date:'', items:[]}; week.days.push(dayEntry); }
+    dayEntry.date = dateLabel;
+    dayEntry.items = items;
+    setMealMenu(meal, m);
+    MEAL_STATE[meal].weekIdx = m.weeks.indexOf(week);
   }
-  week.days = week.days || WEEKDAYS.map(dn=>({day:dn, date:'', items:[]}));
-  let dayEntry = week.days.find(x=>x.day===dayName);
-  if(!dayEntry){ dayEntry = {day:dayName, date:'', items:[]}; week.days.push(dayEntry); }
-  dayEntry.date = dateLabel;
-  dayEntry.items = items;
-  currentWeekIdx = menu.weeks.indexOf(week);
+
+  // Regardless of weekday, show a focused single-day view of exactly what was entered.
+  MEAL_STATE[meal].viewDay = { dayName, dateLabel, items };
+
   closeModal('modal-add-lunch-day');
   document.getElementById('fl-date').value='';
   document.getElementById('fl-items').value='';
@@ -1675,17 +1831,18 @@ async function parsePdfToWeeks(file){
   if(!weeks.length) throw new Error('Could not recognize the menu layout');
   return weeks;
 }
-async function handleMenuPdfUpload(evt){
+async function handleMenuPdfUpload(evt, meal){
   const file = evt.target.files[0];
   evt.target.value = '';
   if(!file) return;
-  const statusEl = document.getElementById('menu-pdf-status');
+  const statusEl = document.getElementById('menu-pdf-status-'+meal);
   statusEl.style.display='block';
   statusEl.textContent='📄 Reading PDF…';
   try{
     const weeks = await parsePdfToWeeks(file);
-    menu.weeks = weeks;
-    currentWeekIdx = pickCurrentWeekIndex(weeks);
+    setMealMenu(meal, { weeks });
+    MEAL_STATE[meal].weekIdx = pickCurrentWeekIndex(weeks);
+    MEAL_STATE[meal].viewDay = null;
     statusEl.textContent = `✅ Imported ${weeks.length} week${weeks.length!==1?'s':''} from the PDF. Check "Edit Week" and fix anything that came through oddly.`;
     await saveAll(); renderAll();
   }catch(err){
@@ -1758,13 +1915,6 @@ function getMonthMarkers(year, month){
       add(it.dateObj.getDate(), it.cat);
     }
   });
-  (menu.weeks||[]).forEach(w=>{
-    (w.days||[]).forEach(d=>{
-      if(!d.date || !d.items || !d.items.length) return;
-      const dt = parseMenuDate(d.date);
-      if(dt && dt.getFullYear()===year && dt.getMonth()===month) add(dt.getDate(),'lunch');
-    });
-  });
   const daysInMonth = new Date(year, month+1, 0).getDate();
   clubs.forEach(c=>{
     const wds = clubWeekdays(c);
@@ -1784,15 +1934,6 @@ function getDayDetails(year, month, day){
     if(it.dateObj && it.dateObj.getFullYear()===year && it.dateObj.getMonth()===month && it.dateObj.getDate()===day){
       results.push({ cat: it.cat, title: it.title, meta:[it.time,it.loc].filter(Boolean).join(' · ') });
     }
-  });
-  (menu.weeks||[]).forEach(w=>{
-    (w.days||[]).forEach(d=>{
-      if(!d.date || !d.items || !d.items.length) return;
-      const dt = parseMenuDate(d.date);
-      if(dt && dt.getFullYear()===year && dt.getMonth()===month && dt.getDate()===day){
-        results.push({ cat:'lunch', title:'Lunch: '+d.items.join(', '), meta:d.day });
-      }
-    });
   });
   clubs.forEach(c=>{
     const wds = clubWeekdays(c);
@@ -1818,8 +1959,8 @@ function renderCalDayDetails(){
   if(!details.length){
     listEl.innerHTML = '<p style="font-size:12.5px;color:var(--text3)">Nothing scheduled this day.</p>';
   } else {
-    const catLbl = {sports:'Sports',clubs:'Club',lunch:'Lunch',school:'Event'};
-    const catCls = {sports:'cat-sports',clubs:'cat-clubs',lunch:'cat-lunch',school:'cat-school'};
+    const catLbl = {sports:'Sports',clubs:'Club',school:'Event'};
+    const catCls = {sports:'cat-sports',clubs:'cat-clubs',school:'cat-school'};
     listEl.innerHTML = details.map(d=>`
       <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
         <span class="ev-cat ${catCls[d.cat]}" style="flex-shrink:0;margin-top:1px">${catLbl[d.cat]}</span>
@@ -2041,7 +2182,7 @@ function renderAll(){
   renderAnnouncements();
   renderSports();
   renderClubs();
-  renderMenu();
+  renderAllMeals();
   renderBell();
   renderCalendar();
   renderNextUp();
@@ -2088,10 +2229,11 @@ function todaysEventItems(){
       return va-vb;
     });
 }
-function todaysLunchItems(){
-  if(!menu.weeks || !menu.weeks.length) return null; // null = no menu uploaded
+function todaysMealItems(meal){
+  const m = mealMenu(meal);
+  if(!m || !m.weeks || !m.weeks.length) return null; // null = no menu uploaded
   const today = new Date(); today.setHours(0,0,0,0);
-  for(const week of menu.weeks){
+  for(const week of m.weeks){
     for(const d of (week.days||[])){
       const dt = parseMenuDate(d.date);
       if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
@@ -2099,6 +2241,7 @@ function todaysLunchItems(){
   }
   return []; // menu exists but nothing listed for today (weekend / no-school day)
 }
+function todaysLunchItems(){ return todaysMealItems('lunch'); }
 function freshAnnouncements(){
   return announcements.filter(a=>announcementIsFresh(a.date));
 }
@@ -2132,23 +2275,28 @@ function ssEventsEmptyHTML(){
     <div class="ss-title">Today's Events</div>
     <div class="ss-empty"><span class="ss-icon">📅</span>Nothing scheduled today</div>`;
 }
-function ssLunchSlideHTML(items, pageNum, totalPages){
+const SS_MEAL_LABEL = { lunch:"Today's Lunch", dinner:"Today's Dinner", afs:"Today's After School Snack" };
+const SS_MEAL_ICON = { lunch:'🍽️', dinner:'🌙', afs:'🍎' };
+function ssMealSlideHTML(meal, items, pageNum, totalPages){
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const pageLabel = totalPages>1 ? `Today's Lunch · ${pageNum} of ${totalPages}` : "Today's Lunch";
+  const base = SS_MEAL_LABEL[meal];
+  const pageLabel = totalPages>1 ? `${base} · ${pageNum} of ${totalPages}` : base;
   const rows = items.map(it=>`<div class="ss-lunch-item">${it}</div>`).join('');
   return `<div class="ss-eyebrow">${dateLabel}</div>
     <div class="ss-title">${pageLabel}</div>
     <div class="ss-lunch-card"><div class="ss-lunch-items">${rows}</div></div>`;
 }
-function ssLunchEmptyHTML(uploaded){
+function ssMealEmptyHTML(meal, uploaded){
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const msg = uploaded ? 'No lunch listed for today' : 'No menu uploaded yet';
+  const msg = uploaded ? `No ${MEAL_LABELS[meal]} listed for today` : 'No menu uploaded yet';
   return `<div class="ss-eyebrow">${dateLabel}</div>
-    <div class="ss-title">Today's Lunch</div>
-    <div class="ss-empty"><span class="ss-icon">🍽️</span>${msg}</div>`;
+    <div class="ss-title">${SS_MEAL_LABEL[meal]}</div>
+    <div class="ss-empty"><span class="ss-icon">${SS_MEAL_ICON[meal]}</span>${msg}</div>`;
 }
+function ssLunchSlideHTML(items, pageNum, totalPages){ return ssMealSlideHTML('lunch', items, pageNum, totalPages); }
+function ssLunchEmptyHTML(uploaded){ return ssMealEmptyHTML('lunch', uploaded); }
 function ssBellSlideHTML(items, pageNum, totalPages){
   const pageLabel = totalPages>1 ? `Bell Schedule · ${pageNum} of ${totalPages}` : "Bell Schedule";
   const rows = items.map(p=>`<tr><td>${p.period||''}</td><td>${p.cls||''}</td><td>${p.start||''}</td><td>${p.end||''}</td></tr>`).join('');
@@ -2194,13 +2342,31 @@ function buildSlideQueue(){
     pages.forEach((pg,i)=> slideQueue.push(()=>ssEventsSlideHTML(pg, i+1, pages.length)));
   }
 
-  const lunchRaw = todaysLunchItems();
+  const lunchRaw = todaysMealItems('lunch');
   if(lunchRaw===null || !lunchRaw.length){
     const uploaded = lunchRaw!==null;
-    slideQueue.push(()=>ssLunchEmptyHTML(uploaded));
+    slideQueue.push(()=>ssMealEmptyHTML('lunch', uploaded));
   } else {
     const pages = chunk(lunchRaw, SS_MAX_LUNCH_PER_SLIDE);
-    pages.forEach((pg,i)=> slideQueue.push(()=>ssLunchSlideHTML(pg, i+1, pages.length)));
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssMealSlideHTML('lunch', pg, i+1, pages.length)));
+  }
+
+  const dinnerRaw = todaysMealItems('dinner');
+  if(dinnerRaw===null || !dinnerRaw.length){
+    const uploaded = dinnerRaw!==null;
+    slideQueue.push(()=>ssMealEmptyHTML('dinner', uploaded));
+  } else {
+    const pages = chunk(dinnerRaw, SS_MAX_LUNCH_PER_SLIDE);
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssMealSlideHTML('dinner', pg, i+1, pages.length)));
+  }
+
+  const afsRaw = todaysMealItems('afs');
+  if(afsRaw===null || !afsRaw.length){
+    const uploaded = afsRaw!==null;
+    slideQueue.push(()=>ssMealEmptyHTML('afs', uploaded));
+  } else {
+    const pages = chunk(afsRaw, SS_MAX_LUNCH_PER_SLIDE);
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssMealSlideHTML('afs', pg, i+1, pages.length)));
   }
 
   const periods = bell||[];

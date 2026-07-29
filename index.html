@@ -191,7 +191,7 @@
   .cal-day.today .dnum { color:var(--gold-light); }
   .cal-dots { display:flex; gap:3px; flex-wrap:wrap; justify-content:center; align-content:flex-start; }
   .cal-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-  .cal-dot.news { background:var(--gold-light); }
+  .cal-dot.school { background:var(--gold-light); }
   .cal-dot.sports { background:#60a5fa; }
   .cal-dot.clubs { background:#a78bfa; }
   .cal-dot.lunch { background:#4ade80; }
@@ -476,7 +476,7 @@
     </div>
     <div class="cal-grid" id="calGridBody"></div>
     <div class="cal-legend">
-      <span><span class="cal-dot news"></span> News</span>
+      <span><span class="cal-dot school"></span> Events</span>
       <span><span class="cal-dot sports"></span> Sports</span>
       <span><span class="cal-dot clubs"></span> Clubs</span>
       <span><span class="cal-dot lunch"></span> Lunch</span>
@@ -551,6 +551,7 @@
       <div class="field"><label>Team Name</label><input id="ft-name" placeholder="e.g. 7th Grade Girls" /></div>
     </div>
     <div class="field"><label>Coach</label><input id="ft-coach" placeholder="Coach name" /></div>
+    <div class="field"><label>Ad Link <span style="font-weight:400;color:var(--text3)">(optional)</span></label><input id="ft-adlink" placeholder="https://sponsor-website.com" /></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-team')">Cancel</button>
       <button class="btn btn-primary" id="team-modal-save-btn" onclick="addTeam()">Add Team</button>
@@ -1061,6 +1062,7 @@ function renderSports(){
       <div class="card-actions"><button class="icon-btn" title="Add game" onclick="requireAuth(()=>openAddGame(${t.id}))">＋</button><button class="icon-btn" title="Edit team" onclick="requireAuth(()=>openEditTeam(${t.id}))">✎</button><button class="icon-btn" title="Remove team" onclick="requireAuth(()=>removeTeam(${t.id}))">✕</button></div>
       <div class="card-top"><h3>${t.name}</h3><span class="tag">${t.sport}</span></div>
       <div class="meta-row">👤 ${t.coach||'Coach TBD'}</div>
+      ${t.adLink ? `<div class="meta-row"><a href="${t.adLink}" target="_blank" rel="noopener noreferrer">🔗 Sponsor Link</a></div>` : ''}
       <div class="record-mini">
         <div class="rm"><div class="n" style="color:#4ade80">${t.w}</div><div class="l">Wins</div></div>
         <div class="rm"><div class="n" style="color:var(--gray-light)">${t.d}</div><div class="l">Draws</div></div>
@@ -1105,6 +1107,7 @@ function openAddTeam(){
   document.getElementById('ft-sport').value='';
   document.getElementById('ft-name').value='';
   document.getElementById('ft-coach').value='';
+  document.getElementById('ft-adlink').value='';
   document.getElementById('team-modal-title').textContent='Add Sports Team';
   document.getElementById('team-modal-save-btn').textContent='Add Team';
   openModal('modal-add-team');
@@ -1116,6 +1119,7 @@ function openEditTeam(id){
   document.getElementById('ft-sport').value=t.sport||'';
   document.getElementById('ft-name').value=t.name||'';
   document.getElementById('ft-coach').value=t.coach||'';
+  document.getElementById('ft-adlink').value=t.adLink||'';
   document.getElementById('team-modal-title').textContent='Edit Sports Team';
   document.getElementById('team-modal-save-btn').textContent='Save Changes';
   openModal('modal-add-team');
@@ -1125,15 +1129,16 @@ async function addTeam(){
   const sport=document.getElementById('ft-sport').value.trim();
   const name=document.getElementById('ft-name').value.trim();
   const coach=document.getElementById('ft-coach').value.trim();
+  const adLink=document.getElementById('ft-adlink').value.trim();
   if(!sport||!name) return alert('Please enter a sport and team name.');
   if(idStr){
     const t = teams.find(t=>t.id===parseInt(idStr,10));
-    if(t){ t.sport=sport; t.name=name; t.coach=coach; }
+    if(t){ t.sport=sport; t.name=name; t.coach=coach; t.adLink=adLink; }
   } else {
-    teams.push({id:nextTid++, sport, name, coach, w:0,d:0,l:0, games:[]});
+    teams.push({id:nextTid++, sport, name, coach, adLink, w:0,d:0,l:0, games:[]});
   }
   closeModal('modal-add-team');
-  ['ft-id','ft-sport','ft-name','ft-coach'].forEach(id=>document.getElementById(id).value='');
+  ['ft-id','ft-sport','ft-name','ft-coach','ft-adlink'].forEach(id=>document.getElementById(id).value='');
   await saveAll(); renderAll();
 }
 async function removeTeam(id){
@@ -1677,12 +1682,8 @@ function getMonthMarkers(year, month){
   collectCalendarItems().forEach(it=>{
     if(!it.dateObj) return;
     if(it.dateObj.getFullYear()===year && it.dateObj.getMonth()===month){
-      add(it.dateObj.getDate(), it.cat==='sports' ? 'sports' : 'news');
+      add(it.dateObj.getDate(), it.cat);
     }
-  });
-  announcements.forEach(a=>{
-    const d = parseGameDate(a.date);
-    if(d && d.getFullYear()===year && d.getMonth()===month) add(d.getDate(),'news');
   });
   (menu.weeks||[]).forEach(w=>{
     (w.days||[]).forEach(d=>{
@@ -1708,13 +1709,7 @@ function getDayDetails(year, month, day){
   const results = [];
   collectCalendarItems().forEach(it=>{
     if(it.dateObj && it.dateObj.getFullYear()===year && it.dateObj.getMonth()===month && it.dateObj.getDate()===day){
-      results.push({ cat: it.cat==='sports' ? 'sports':'news', title: it.title, meta:[it.time,it.loc].filter(Boolean).join(' · ') });
-    }
-  });
-  announcements.forEach(a=>{
-    const d = parseGameDate(a.date);
-    if(d && d.getFullYear()===year && d.getMonth()===month && d.getDate()===day){
-      results.push({ cat:'news', title:a.title, meta: a.body ? (a.body.length>90 ? a.body.slice(0,90)+'…' : a.body) : '' });
+      results.push({ cat: it.cat, title: it.title, meta:[it.time,it.loc].filter(Boolean).join(' · ') });
     }
   });
   (menu.weeks||[]).forEach(w=>{
@@ -1750,8 +1745,8 @@ function renderCalDayDetails(){
   if(!details.length){
     listEl.innerHTML = '<p style="font-size:12.5px;color:var(--text3)">Nothing scheduled this day.</p>';
   } else {
-    const catLbl = {sports:'Sports',clubs:'Club',lunch:'Lunch',news:'News'};
-    const catCls = {sports:'cat-sports',clubs:'cat-clubs',lunch:'cat-lunch',news:'cat-school'};
+    const catLbl = {sports:'Sports',clubs:'Club',lunch:'Lunch',school:'Event'};
+    const catCls = {sports:'cat-sports',clubs:'cat-clubs',lunch:'cat-lunch',school:'cat-school'};
     listEl.innerHTML = details.map(d=>`
       <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
         <span class="ev-cat ${catCls[d.cat]}" style="flex-shrink:0;margin-top:1px">${catLbl[d.cat]}</span>

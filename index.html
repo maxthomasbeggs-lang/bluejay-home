@@ -425,6 +425,7 @@
     <div class="section-top-left"><h2>Lunch <span>Menu</span></h2><p>Upload the monthly menu PDF and it'll be split into weeks automatically</p></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost" onclick="requireAuth(openAddLunchDay)">➕ Add Lunch</button>
       <button id="clearExpiredMenuBtn" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(clearExpiredMenu)">🗑️ Clear Expired Menu</button>
     </div>
   </div>
@@ -538,6 +539,18 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-announce')">Cancel</button>
       <button class="btn btn-primary" onclick="addAnnouncement()">Post</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-add-lunch-day">
+  <div class="modal">
+    <h2>Add Lunch (Single Day)</h2>
+    <div class="field"><label>Date</label><input id="fl-date" type="date" /></div>
+    <div class="field"><label>Menu Items</label><textarea id="fl-items" placeholder="e.g. Cheese Pizza, Garden Salad, Fruit Cup"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-lunch-day')">Cancel</button>
+      <button class="btn btn-primary" onclick="addLunchDay()">Add Lunch</button>
     </div>
   </div>
 </div>
@@ -1380,6 +1393,66 @@ async function clearExpiredMenu(){
   if(!confirm('This menu has run through its last listed date. Clear it now and upload a new monthly PDF?')) return;
   menu.weeks = [];
   currentWeekIdx = 0;
+  await saveAll(); renderAll();
+}
+// Returns the Monday..Friday date range (as Date objects, hours zeroed) for the week containing d.
+function weekRangeFor(d){
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  const diffToMon = dow===0 ? -6 : 1-dow;
+  const mon = new Date(d); mon.setDate(d.getDate()+diffToMon); mon.setHours(0,0,0,0);
+  const fri = new Date(mon); fri.setDate(mon.getDate()+4);
+  return {mon, fri};
+}
+function openAddLunchDay(){
+  document.getElementById('fl-date').value='';
+  document.getElementById('fl-items').value='';
+  openModal('modal-add-lunch-day');
+}
+async function addLunchDay(){
+  const dateInput = document.getElementById('fl-date').value;
+  const itemsRaw = document.getElementById('fl-items').value.trim();
+  if(!dateInput) return alert('Please pick a date.');
+  const items = itemsRaw ? itemsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const d = new Date(dateInput+'T00:00:00');
+  if(isNaN(d)) return alert('Please pick a valid date.');
+  const dayName = d.toLocaleDateString('en-US',{weekday:'long'});
+  const dateLabel = dateInputToLabel(dateInput);
+  if(!WEEKDAYS.includes(dayName)){
+    alert('Lunch can only be added for a weekday (Monday–Friday).');
+    return;
+  }
+  menu.weeks = menu.weeks || [];
+  const {mon, fri} = weekRangeFor(d);
+  // Find an existing week whose Mon–Fri range contains this date.
+  let week = menu.weeks.find(w=>{
+    const dates = (w.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean);
+    if(!dates.length) return false;
+    const min = new Date(Math.min(...dates.map(x=>x.getTime())));
+    const max = new Date(Math.max(...dates.map(x=>x.getTime())));
+    return mon>=new Date(min.getFullYear(),min.getMonth(),min.getDate()-6) && mon<=max && fri>=min;
+  }) || menu.weeks.find(w=>{
+    const dates = (w.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean);
+    return dates.some(x=> x.getTime()>=mon.getTime() && x.getTime()<=fri.getTime());
+  });
+  if(!week){
+    week = { weekOf: 'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'}), days: WEEKDAYS.map(dn=>({day:dn, date:'', items:[]})) };
+    menu.weeks.push(week);
+    menu.weeks.sort((a,b)=>{
+      const da=(a.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean)[0];
+      const db=(b.days||[]).map(x=>parseMenuDate(x.date)).filter(Boolean)[0];
+      if(!da||!db) return 0;
+      return da-db;
+    });
+  }
+  week.days = week.days || WEEKDAYS.map(dn=>({day:dn, date:'', items:[]}));
+  let dayEntry = week.days.find(x=>x.day===dayName);
+  if(!dayEntry){ dayEntry = {day:dayName, date:'', items:[]}; week.days.push(dayEntry); }
+  dayEntry.date = dateLabel;
+  dayEntry.items = items;
+  currentWeekIdx = menu.weeks.indexOf(week);
+  closeModal('modal-add-lunch-day');
+  document.getElementById('fl-date').value='';
+  document.getElementById('fl-items').value='';
   await saveAll(); renderAll();
 }
 

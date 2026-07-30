@@ -86,6 +86,14 @@
     .utility-bar { display: flex; }
   }
 
+  /* StuCo-only controls: hidden until unlocked via the StuCo Login button */
+  .stuco-only { display: none !important; }
+  body.stuco-unlocked .stuco-only { display: inherit !important; }
+  body.stuco-unlocked .stuco-only.stuco-flex { display: flex !important; }
+  #stuco-login-btn { display: flex; }
+  body.stuco-unlocked #stuco-login-btn { display: none !important; }
+  body.stuco-unlocked .stuco-login-mobile { display: none !important; }
+
   #reset-data-btn:hover { background: rgba(248,113,113,0.2) !important; border-color: rgba(248,113,113,0.5) !important; }
   .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; margin-left: 6px; vertical-align: middle; }
   .sync-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
@@ -330,7 +338,11 @@
     <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through News, Events, Lunch, Dinner, AFS & Classes for screen mirroring">
       🖥️ Slideshow Mode
     </button>
-    <button id="reset-data-btn" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
+    <button id="stuco-login-btn" onclick="requireAuth(function(){})" title="StuCo login to enable editing"
+      style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.3);border-radius:8px;cursor:pointer;font-family:'Fredoka',sans-serif;transition:all 0.15s;width:100%;align-items:center;justify-content:center;gap:6px;">
+      🔒 StuCo Login
+    </button>
+    <button id="reset-data-btn" class="stuco-only" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
       style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Fredoka',sans-serif;transition:all 0.15s;width:100%;">
       Reset Data
     </button>
@@ -345,7 +357,11 @@
 
 <div class="utility-bar">
   <button class="slideshow-btn" style="width:auto" onclick="startSlideshow()" title="Screen mirroring slideshow">🖥️ Slideshow</button>
-  <button onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
+  <button id="stuco-login-btn-mobile" class="stuco-login-mobile" onclick="requireAuth(function(){})" title="StuCo login to enable editing"
+    style="padding:6px 12px;font-size:11px;font-weight:600;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.3);border-radius:6px;cursor:pointer;font-family:'Fredoka',sans-serif;">
+    🔒 StuCo Login
+  </button>
+  <button class="stuco-only stuco-flex" onclick="requireAuth(resetAllData)" title="Clear all data (admin only)"
     style="padding:6px 12px;font-size:11px;font-weight:600;color:#f87171;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:6px;cursor:pointer;font-family:'Fredoka',sans-serif;">
     Reset Data
   </button>
@@ -396,7 +412,7 @@
 <div class="section" id="sec-announcements">
   <div class="section-top">
     <div class="section-top-left"><h2>School <span>News</span></h2><p>Announcements from staff &amp; administration</p></div>
-    <button class="btn btn-primary" onclick="requireAuth(()=>openModal('modal-add-announce'))">+ Post Announcement</button>
+    <button class="btn btn-primary stuco-only" onclick="requireAuth(()=>openModal('modal-add-announce'))">+ Post Announcement</button>
   </div>
   <div id="announceList"></div>
 </div>
@@ -405,7 +421,7 @@
 <div class="section" id="sec-sports">
   <div class="section-top">
     <div class="section-top-left"><h2>Sports <span>Teams</span></h2><p>Team records &amp; upcoming games</p></div>
-    <button class="btn btn-primary" onclick="requireAuth(openAddTeam)">+ Add Team</button>
+    <button class="btn btn-primary stuco-only" onclick="requireAuth(openAddTeam)">+ Add Team</button>
   </div>
   <div class="card-grid" id="sportsGrid"></div>
 </div>
@@ -414,7 +430,7 @@
 <div class="section" id="sec-clubs">
   <div class="section-top">
     <div class="section-top-left"><h2>Clubs &amp; <span>Activities</span></h2><p>Meeting times &amp; how to join</p></div>
-    <button class="btn btn-primary" onclick="requireAuth(openAddClub)">+ Add Club</button>
+    <button class="btn btn-primary stuco-only" onclick="requireAuth(openAddClub)">+ Add Club</button>
   </div>
   <div class="card-grid" id="clubsGrid"></div>
 </div>
@@ -436,9 +452,9 @@
   <!-- LUNCH VIEW -->
   <div id="mealView-lunch">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-lunch').click())">📄 Upload Monthly PDF</button>
-      <button class="btn btn-ghost" onclick="requireAuth(()=>openAddMealDay('lunch'))">➕ Add Lunch</button>
-      <button id="clearExpiredMenuBtn-lunch" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('lunch'))">🗑️ Clear Expired Menu</button>
+      <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-lunch').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>openAddMealDay('lunch'))">➕ Add Lunch</button>
+      <button id="clearExpiredMenuBtn-lunch" class="btn btn-danger-ghost stuco-only" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('lunch'))">🗑️ Clear Expired Menu</button>
     </div>
     <input type="file" id="menu-pdf-input-lunch" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event,'lunch')" />
     <div id="menu-pdf-status-lunch" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
@@ -461,9 +477,9 @@
   <!-- DINNER VIEW -->
   <div id="mealView-dinner" style="display:none">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-dinner').click())">📄 Upload Monthly PDF</button>
-      <button class="btn btn-ghost" onclick="requireAuth(()=>openAddMealDay('dinner'))">➕ Add Dinner</button>
-      <button id="clearExpiredMenuBtn-dinner" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('dinner'))">🗑️ Clear Expired Menu</button>
+      <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-dinner').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>openAddMealDay('dinner'))">➕ Add Dinner</button>
+      <button id="clearExpiredMenuBtn-dinner" class="btn btn-danger-ghost stuco-only" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('dinner'))">🗑️ Clear Expired Menu</button>
     </div>
     <input type="file" id="menu-pdf-input-dinner" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event,'dinner')" />
     <div id="menu-pdf-status-dinner" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
@@ -486,9 +502,9 @@
   <!-- AFS VIEW -->
   <div id="mealView-afs" style="display:none">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <button class="btn btn-ghost" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-afs').click())">📄 Upload Monthly PDF</button>
-      <button class="btn btn-ghost" onclick="requireAuth(()=>openAddMealDay('afs'))">➕ Add Snack</button>
-      <button id="clearExpiredMenuBtn-afs" class="btn btn-danger-ghost" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('afs'))">🗑️ Clear Expired Menu</button>
+      <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('menu-pdf-input-afs').click())">📄 Upload Monthly PDF</button>
+      <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>openAddMealDay('afs'))">➕ Add Snack</button>
+      <button id="clearExpiredMenuBtn-afs" class="btn btn-danger-ghost stuco-only" style="display:none" onclick="requireAuth(()=>clearExpiredMenu('afs'))">🗑️ Clear Expired Menu</button>
     </div>
     <input type="file" id="menu-pdf-input-afs" accept="application/pdf" style="display:none" onchange="handleMenuPdfUpload(event,'afs')" />
     <div id="menu-pdf-status-afs" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
@@ -513,7 +529,7 @@
 <div class="section" id="sec-bell">
   <div class="section-top">
     <div class="section-top-left"><h2>Bell <span>Schedule</span></h2><p>Regular day period times</p></div>
-    <button class="btn btn-primary" onclick="requireAuth(()=>openModal('modal-add-period'))">+ Add Period</button>
+    <button class="btn btn-primary stuco-only" onclick="requireAuth(()=>openModal('modal-add-period'))">+ Add Period</button>
   </div>
   <div class="table-wrap">
     <table>
@@ -527,7 +543,7 @@
 <div class="section" id="sec-calendar">
   <div class="section-top">
     <div class="section-top-left"><h2>School <span>Calendar</span></h2><p>Today &amp; tomorrow's games, meetings &amp; events</p></div>
-    <button class="btn btn-primary" onclick="requireAuth(()=>openModal('modal-add-event'))">+ Add Event</button>
+    <button class="btn btn-primary stuco-only" onclick="requireAuth(()=>openModal('modal-add-event'))">+ Add Event</button>
   </div>
 
   <div class="cal-grid-wrap">
@@ -1011,6 +1027,7 @@ function submitPassword() {
   const val = document.getElementById('pw-input').value;
   if (val === ADMIN_PASSWORD) {
     adminUnlocked = true;
+    document.body.classList.add('stuco-unlocked');
     document.getElementById('pw-error').style.display='none';
     document.getElementById('pw-input').value='';
     closeModal('modal-auth');
@@ -1146,8 +1163,8 @@ function renderSports(){
         ? `<span style="color:${rColor};font-weight:700;letter-spacing:0.5px">${r}</span>&nbsp;&nbsp;${g.us}–${g.them}`
         : [g.time,g.loc].filter(Boolean).join(' · ');
       const scoreBtn = scored
-        ? `<button class="icon-btn" title="Edit score" onclick="requireAuth(()=>openAddScore(${t.id},${g.id}))">✎</button>`
-        : `<button class="icon-btn" title="Add score" onclick="requireAuth(()=>openAddScore(${t.id},${g.id}))">🏅</button>`;
+        ? `<button class="icon-btn stuco-only" title="Edit score" onclick="requireAuth(()=>openAddScore(${t.id},${g.id}))">✎</button>`
+        : `<button class="icon-btn stuco-only" title="Add score" onclick="requireAuth(()=>openAddScore(${t.id},${g.id}))">🏅</button>`;
       return `
       <div class="game-row" style="margin-top:8px;padding:10px 12px;">
         <div class="ev-date-block" style="width:44px"><div class="ev-month">${(g.date||'').split(' ')[0]||''}</div><div class="ev-day" style="font-size:18px">${(g.date||'').split(' ')[1]||'—'}</div></div>
@@ -1156,7 +1173,7 @@ function renderSports(){
       </div>`;
     }).join('') : '<p style="font-size:12px;color:var(--text3);margin-top:10px">No upcoming games scheduled.</p>';
     return `<div class="info-card">
-      <div class="card-actions"><button class="icon-btn" title="Add game" onclick="requireAuth(()=>openAddGame(${t.id}))">＋</button><button class="icon-btn" title="Edit team" onclick="requireAuth(()=>openEditTeam(${t.id}))">✎</button><button class="icon-btn" title="Remove team" onclick="requireAuth(()=>removeTeam(${t.id}))">✕</button></div>
+      <div class="card-actions stuco-only stuco-flex"><button class="icon-btn" title="Add game" onclick="requireAuth(()=>openAddGame(${t.id}))">＋</button><button class="icon-btn" title="Edit team" onclick="requireAuth(()=>openEditTeam(${t.id}))">✎</button><button class="icon-btn" title="Remove team" onclick="requireAuth(()=>removeTeam(${t.id}))">✕</button></div>
       <div class="card-top"><h3>${t.name}</h3><span class="tag">${t.sport}</span></div>
       <div class="meta-row">👤 ${t.coach||'Coach TBD'}</div>
       ${t.adLink ? `<div class="meta-row"><a href="${t.adLink}" target="_blank" rel="noopener noreferrer">🔗 Sponsor Link</a></div>` : ''}
@@ -1291,7 +1308,7 @@ function renderClubs(){
   if(!clubs.length){ grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎭</div><p>No clubs listed yet.</p></div>'; return; }
   grid.innerHTML = clubs.map(c=>`
     <div class="info-card">
-      <div class="card-actions"><button class="icon-btn" title="Edit club" onclick="requireAuth(()=>openEditClub(${c.id}))">✎</button><button class="icon-btn" title="Remove club" onclick="requireAuth(()=>removeClub(${c.id}))">✕</button></div>
+      <div class="card-actions stuco-only stuco-flex"><button class="icon-btn" title="Edit club" onclick="requireAuth(()=>openEditClub(${c.id}))">✎</button><button class="icon-btn" title="Remove club" onclick="requireAuth(()=>removeClub(${c.id}))">✕</button></div>
       <div class="card-top"><h3>${c.name}</h3></div>
       <div class="meta-row">👤 ${c.sponsor||'Sponsor TBD'}</div>
       <div class="meta-row">🕐 ${[c.day,c.time].filter(Boolean).join(' · ')||'Meeting time TBD'}</div>
@@ -1858,7 +1875,7 @@ function renderBell(){
   if(!bell.length){ body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">No periods added yet.</td></tr>'; return; }
   body.innerHTML = bell.map(b=>`<tr>
     <td><strong>${b.period}</strong></td><td>${b.cls}</td><td>${b.start}</td><td>${b.end}</td>
-    <td style="text-align:right"><button class="icon-btn" onclick="requireAuth(()=>removePeriod(${b.id}))">✕</button></td>
+    <td style="text-align:right"><button class="icon-btn stuco-only" onclick="requireAuth(()=>removePeriod(${b.id}))">✕</button></td>
   </tr>`).join('');
 }
 async function addPeriod(){
@@ -2068,7 +2085,7 @@ function renderCalendar(){
       <div class="ev-info"><div class="ev-title">${it.title}</div><div class="ev-meta">${[it.time,it.loc].filter(Boolean).join(' · ')}</div></div>
       <span class="ev-cat ${catCls}">${catLbl}</span>
       ${it.ha?`<span class="${it.ha==='Home'?'home-badge':'away-badge'}">${it.ha}</span>`:''}
-      ${it.id!=null?`<button class="icon-btn" onclick="requireAuth(()=>removeEvent(${it.id}))">✕</button>`:''}
+      ${it.id!=null?`<button class="icon-btn stuco-only" onclick="requireAuth(()=>removeEvent(${it.id}))">✕</button>`:''}
     </div>`;
   };
   const buildColumns = ()=>{

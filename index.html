@@ -841,7 +841,7 @@ function setSyncStatus(state, label) {
   });
   ['sync-label','sync-label-mobile'].forEach(id=>{
     const lbl = document.getElementById(id);
-    if(lbl) lbl.textContent = label || 'Live';
+    if(lbl) lbl.textContent = (label || 'Live') + ' v3';
   });
 }
 
@@ -890,7 +890,20 @@ async function saveAll() {
     id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events,
     meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
   });
-  if (error) { console.error('SAVE ERROR:', JSON.stringify(error)); setSyncStatus('error','Error'); }
+  if (error) {
+    console.error('SAVE ERROR:', JSON.stringify(error));
+    setSyncStatus('error','Error');
+    var msg = (error.message || JSON.stringify(error)) + (error.hint ? (' | Hint: '+error.hint) : '') + (error.code ? (' | Code: '+error.code) : '');
+    var box = document.getElementById('save-error-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'save-error-box';
+      box.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#7f1d1d;color:#fff;padding:12px 16px;font-family:monospace;font-size:13px;line-height:1.4;border-top:2px solid #f87171;max-height:40vh;overflow:auto;';
+      document.body.appendChild(box);
+    }
+    box.textContent = 'SAVE ERROR: ' + msg;
+    try { alert('Save failed:\n' + msg); } catch(e) {}
+  }
 }
 
 function saveLocalStorage(){

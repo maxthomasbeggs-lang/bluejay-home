@@ -1971,7 +1971,7 @@ function getDayDetails(year, month, day){
     const wds = clubWeekdays(c);
     const dow = new Date(year,month,day).getDay();
     if(wds.some(wd=>WD_INDEX[wd]===dow)){
-      results.push({ cat:'clubs', title:c.name, meta:'' });
+      results.push({ cat:'clubs', title:c.name, meta:[c.time,c.room].filter(Boolean).join(' · ') });
     }
   });
   return results;

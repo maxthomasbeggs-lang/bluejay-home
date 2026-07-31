@@ -335,7 +335,7 @@
     <button class="nav-link" onclick="showSection('calendar')"><span class="nav-icon">📅</span><span class="nav-label">Calendar</span></button>
   </nav>
   <div class="sidebar-footer">
-    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through News, Events, Lunch, Dinner, AFS & Classes for screen mirroring">
+    <button class="slideshow-btn" onclick="startSlideshow()" title="Cycle through News, Events, Lunch, AFS & Classes for screen mirroring">
       🖥️ Slideshow Mode
     </button>
     <button id="stuco-login-btn" onclick="requireAuth(function(){})" title="StuCo login to enable editing"
@@ -1961,6 +1961,8 @@ function getMonthMarkers(year, month){
 function getDayDetails(year, month, day){
   const results = [];
   collectCalendarItems().forEach(it=>{
+    // Clubs are added separately below so every meeting day is covered, not just the next one.
+    if(it.cat==='clubs') return;
     if(it.dateObj && it.dateObj.getFullYear()===year && it.dateObj.getMonth()===month && it.dateObj.getDate()===day){
       results.push({ cat: it.cat, title: it.title, meta:[it.time,it.loc].filter(Boolean).join(' · ') });
     }
@@ -1969,7 +1971,7 @@ function getDayDetails(year, month, day){
     const wds = clubWeekdays(c);
     const dow = new Date(year,month,day).getDay();
     if(wds.some(wd=>WD_INDEX[wd]===dow)){
-      results.push({ cat:'clubs', title:c.name, meta:[c.time,c.room].filter(Boolean).join(' · ') });
+      results.push({ cat:'clubs', title:c.name, meta:'' });
     }
   });
   return results;
@@ -2046,7 +2048,7 @@ function nextClubOccurrence(club){
     const d = new Date(today); d.setDate(d.getDate()+add);
     if(idxs.includes(d.getDay())){
       const label = d.toLocaleDateString('en-US',{month:'short', day:'numeric'});
-      return { title: club.name+' Meeting', date: label, dateObj: d, time: club.time, loc: club.room, cat:'clubs' };
+      return { title: club.name, date: label, dateObj: d, time: club.time, loc: club.room, cat:'clubs' };
     }
   }
   return null;
@@ -2381,14 +2383,7 @@ function buildSlideQueue(){
     pages.forEach((pg,i)=> slideQueue.push(()=>ssMealSlideHTML('lunch', pg, i+1, pages.length)));
   }
 
-  const dinnerRaw = todaysMealItems('dinner');
-  if(dinnerRaw===null || !dinnerRaw.length){
-    const uploaded = dinnerRaw!==null;
-    slideQueue.push(()=>ssMealEmptyHTML('dinner', uploaded));
-  } else {
-    const pages = chunk(dinnerRaw, SS_MAX_LUNCH_PER_SLIDE);
-    pages.forEach((pg,i)=> slideQueue.push(()=>ssMealSlideHTML('dinner', pg, i+1, pages.length)));
-  }
+  // Dinner intentionally excluded from the slideshow rotation.
 
   const afsRaw = todaysMealItems('afs');
   if(afsRaw===null || !afsRaw.length){

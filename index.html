@@ -528,9 +528,16 @@
 <!-- BELL SCHEDULE -->
 <div class="section" id="sec-bell">
   <div class="section-top">
-    <div class="section-top-left"><h2>Bell <span>Schedule</span></h2><p>Regular day period times</p></div>
+    <div class="section-top-left"><h2>Bell <span>Schedule</span></h2><p id="bellSectionSub">Regular day period times</p></div>
     <button class="btn btn-primary stuco-only" onclick="requireAuth(()=>openModal('modal-add-period'))">+ Add Period</button>
   </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('bell-pdf-input').click())">📄 Upload Bell Schedule PDF</button>
+    <button class="btn btn-ghost stuco-only" onclick="requireAuth(openDayOfModal)">📌 Day Of…</button>
+  </div>
+  <input type="file" id="bell-pdf-input" accept="application/pdf" style="display:none" onchange="handleBellPdfUpload(event)" />
+  <div id="bell-pdf-status" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
+  <div id="bellOverrideBanner" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.12);border:1px solid rgba(217,161,37,0.3);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"></div>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Period</th><th>Passing Time (min)</th><th>Start</th><th>End</th><th></th></tr></thead>
@@ -737,6 +744,22 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modal-day-of">
+  <div class="modal">
+    <h2>Day Of Schedule</h2>
+    <p style="font-size:12.5px;color:var(--text3);margin:-6px 0 14px;line-height:1.6;">Assign a saved bell schedule to a specific date. On that date, the Bell tab will automatically show this schedule instead of Regular Day — then switch back on its own.</p>
+    <div class="field"><label>Date</label><input id="do-date" type="date" /></div>
+    <div class="field"><label>Schedule</label><select id="do-schedule"></select></div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button class="btn btn-danger-ghost" id="do-remove-btn" style="display:none" onclick="removeDayOfOverrideFromModal()">Remove Override</button>
+      <div style="display:flex;gap:10px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('modal-day-of')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveDayOfOverride()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-add-event">
   <div class="modal">
     <h2>Add School Event</h2>
@@ -808,12 +831,17 @@ CREATE TABLE IF NOT EXISTS school_state (
   "afsMenu"     JSONB NOT NULL DEFAULT '{}',
   bell          JSONB NOT NULL DEFAULT '[]',
   events        JSONB NOT NULL DEFAULT '[]',
+  "bellSchedules" JSONB NOT NULL DEFAULT '{}',
+  "bellOverrides" JSONB NOT NULL DEFAULT '{}',
   meta          JSONB NOT NULL DEFAULT '{}'
 );
 
 -- If you already created this table before Dinner/AFS existed, run this once:
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "dinnerMenu" JSONB NOT NULL DEFAULT '{}';
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "afsMenu" JSONB NOT NULL DEFAULT '{}';
+-- If you already created this table before named Bell Schedules existed, run this once:
+-- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellSchedules" JSONB NOT NULL DEFAULT '{}';
+-- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellOverrides" JSONB NOT NULL DEFAULT '{}';
 
 INSERT INTO school_state (id) VALUES (1) ON CONFLICT DO NOTHING;
 
@@ -866,6 +894,11 @@ const DEFAULT_BELL = [
   {id:7, period:'6th Period', cls:'5', start:'1:35 PM', end:'2:35 PM'},
 ];
 const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+// Named bell schedules, e.g. { "Regular Day": [ {period,cls,start,end}, ... ], "Early Release": [...] }
+// "Regular Day" always exists and mirrors the legacy `bell` array.
+const DEFAULT_BELL_SCHEDULES = { 'Regular Day': DEFAULT_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})) };
+// Dated overrides: { "2026-10-15": "Assembly Day" } — a saved schedule name assigned to a specific date.
+const DEFAULT_BELL_OVERRIDES = {};
 const DEFAULT_MENU = { weeks: [] }; // starts empty — upload a monthly PDF or use "+ Add Week"
 const DEFAULT_ANNOUNCEMENTS = [
   {id:1, title:'Welcome Back!', date:'Aug 12', body:'We are excited to kick off the new school year. Check this hub for the latest sports schedules, club meetings, and lunch menus.'}
@@ -874,6 +907,7 @@ const DEFAULT_EVENTS = [];
 
 // ── In-memory state ──────────────────────────────────────────
 let announcements=[], teams=[], clubs=[], bell=[], events=[], menu=null, dinnerMenu=null, afsMenu=null;
+let bellSchedules={}, bellOverrides={};
 let mealView = 'lunch'; // 'lunch' | 'dinner' (dinner view shows both Dinner & AFS)
 const MEAL_STATE = {
   lunch: { get menu(){return menu;}, set menu(v){menu=v;}, weekIdx:0, viewDay:null },
@@ -888,6 +922,7 @@ async function saveAll() {
   setSyncStatus('syncing','Saving…');
   const { error } = await sb.from('school_state').upsert({
     id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events,
+    bellSchedules, bellOverrides,
     meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
   });
   if (error) {
@@ -908,7 +943,7 @@ async function saveAll() {
 
 function saveLocalStorage(){
   try{
-    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
+    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events, bellSchedules, bellOverrides, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
     // Note: localStorage is used only as an offline fallback when Supabase isn't configured.
     window.__rmsStateFallback = state;
   }catch(e){}
@@ -926,12 +961,14 @@ async function resetAllData() {
     '• Sports teams & games\n' +
     '• Clubs\n' +
     '• Lunch, Dinner & AFS menus\n' +
-    '• Bell schedule\n' +
+    '• Bell schedule (all named schedules & day overrides)\n' +
     '• Calendar events\n\n' +
     'This cannot be undone. Continue?'
   );
   if (!sure) return;
   announcements=[]; teams=[]; clubs=[]; bell=[]; events=[];
+  bellSchedules = { 'Regular Day': [] };
+  bellOverrides = {};
   menu = { weeks: [] };
   dinnerMenu = { weeks: [] };
   afsMenu = { weeks: [] };
@@ -969,6 +1006,8 @@ function applyState(row) {
     teams   = DEFAULT_TEAMS.map(t=>({...t, games:[...t.games]}));
     clubs   = DEFAULT_CLUBS.map(c=>({...c}));
     bell    = DEFAULT_BELL.map(b=>({...b}));
+    bellSchedules = JSON.parse(JSON.stringify(DEFAULT_BELL_SCHEDULES));
+    bellOverrides = JSON.parse(JSON.stringify(DEFAULT_BELL_OVERRIDES));
     events  = DEFAULT_EVENTS.map(e=>({...e}));
     menu    = JSON.parse(JSON.stringify(DEFAULT_MENU));
     dinnerMenu = { weeks: [] };
@@ -983,6 +1022,9 @@ function applyState(row) {
   teams   = row.teams   && row.teams.length   ? row.teams   : DEFAULT_TEAMS;
   clubs   = row.clubs   && row.clubs.length   ? row.clubs   : DEFAULT_CLUBS;
   bell    = row.bell    && row.bell.length    ? row.bell    : DEFAULT_BELL;
+  bellSchedules = (row.bellSchedules && Object.keys(row.bellSchedules).length) ? row.bellSchedules : { 'Regular Day': bell.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})) };
+  if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = bell.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end}));
+  bellOverrides = row.bellOverrides || {};
   events  = row.events  || [];
   menu    = normalizeMenu(row.menu);
   dinnerMenu = normalizeMenu(row.dinnerMenu);
@@ -1883,12 +1925,47 @@ async function handleMenuPdfUpload(evt, meal){
 }
 
 // ── Render: Bell Schedule ────────────────────────────────────
+// Returns { name, isOverride, dateLabel } for whichever schedule should show today.
+function activeBellScheduleInfo(){
+  const todayKey = localDateKey(new Date());
+  const overrideName = bellOverrides[todayKey];
+  if(overrideName && bellSchedules[overrideName]){
+    return { name: overrideName, isOverride:true, dateKey: todayKey };
+  }
+  return { name: 'Regular Day', isOverride:false, dateKey: todayKey };
+}
+function localDateKey(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+// Keeps the legacy `bell` array (used by the slideshow) in sync with the "Regular Day" schedule.
+function syncLegacyBellFromRegular(){
+  const reg = bellSchedules['Regular Day'] || [];
+  bell = reg.map(p=>({ id: p.id!=null ? p.id : nextPid++, period:p.period, cls:p.cls, start:p.start, end:p.end }));
+}
 function renderBell(){
+  if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = [];
+  const info = activeBellScheduleInfo();
+  const sub = document.getElementById('bellSectionSub');
+  if(sub) sub.textContent = info.isOverride ? `${info.name} — today only` : 'Regular day period times';
+
+  const banner = document.getElementById('bellOverrideBanner');
+  if(banner){
+    if(info.isOverride){
+      banner.style.display='flex';
+      banner.innerHTML = `<span>📌 Today is showing the <strong>${info.name}</strong> schedule. It'll switch back to Regular Day automatically after today.</span>
+        <button class="btn btn-ghost stuco-only" style="padding:6px 12px;font-size:12px" onclick="requireAuth(()=>removeDayOfOverride('${info.dateKey}'))">Remove</button>`;
+    } else {
+      banner.style.display='none';
+    }
+  }
+
+  const periods = bellSchedules[info.name] || [];
   const body = document.getElementById('bellBody');
-  if(!bell.length){ body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">No periods added yet.</td></tr>'; return; }
-  body.innerHTML = bell.map(b=>`<tr>
+  if(!periods.length){ body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">No periods added yet.</td></tr>'; return; }
+  body.innerHTML = periods.map((b,i)=>`<tr>
     <td><strong>${b.period}</strong></td><td>${b.cls}</td><td>${b.start}</td><td>${b.end}</td>
-    <td style="text-align:right"><button class="icon-btn stuco-only" onclick="requireAuth(()=>removePeriod(${b.id}))">✕</button></td>
+    <td style="text-align:right"><button class="icon-btn stuco-only" onclick="requireAuth(()=>removePeriod(${i}))">✕</button></td>
   </tr>`).join('');
 }
 async function addPeriod(){
@@ -1897,15 +1974,146 @@ async function addPeriod(){
   const start=timeInputToLabel(document.getElementById('fp-start').value);
   const end=timeInputToLabel(document.getElementById('fp-end').value);
   if(!period||!start||!end) return alert('Please enter a period, start time, and end time.');
-  bell.push({id:nextPid++, period, cls, start, end});
+  // New periods added via this button always go on the schedule currently shown (today's active schedule).
+  const info = activeBellScheduleInfo();
+  if(!bellSchedules[info.name]) bellSchedules[info.name] = [];
+  bellSchedules[info.name].push({id:nextPid++, period, cls, start, end});
+  if(info.name==='Regular Day') syncLegacyBellFromRegular();
   closeModal('modal-add-period');
   ['fp-period','fp-class'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fp-start').value='';
   document.getElementById('fp-end').value='';
   await saveAll(); renderAll();
 }
-async function removePeriod(id){
-  bell = bell.filter(b=>b.id!==id);
+async function removePeriod(idx){
+  const info = activeBellScheduleInfo();
+  if(!bellSchedules[info.name]) return;
+  bellSchedules[info.name] = bellSchedules[info.name].filter((_,i)=>i!==idx);
+  if(info.name==='Regular Day') syncLegacyBellFromRegular();
+  await saveAll(); renderAll();
+}
+
+// ── Bell Schedule PDF upload (multiple named schedules per PDF) ─
+// Looks for heading lines like "Regular Day Schedule", "Early Release Schedule",
+// "Assembly Day Schedule" and reads the period rows underneath each into its own
+// named schedule. Falls back to treating the whole PDF as one "Regular Day" schedule.
+const BELL_SCHEDULE_HEADING_RE = /^(.{2,40}?)\s*(?:Bell\s*)?Schedule\s*$/i;
+const BELL_TIME_RE = /(\d{1,2}:\d{2}\s*(?:AM|PM|A\.M\.|P\.M\.)?)/i;
+function cleanBellTime(t){
+  if(!t) return '';
+  return t.replace(/\./g,'').replace(/\s+/g,' ').trim().toUpperCase().replace(/(AM|PM)$/,' $1').replace(/\s+/g,' ');
+}
+function parseBellLinesToPeriods(lines){
+  const periods = [];
+  lines.forEach(line=>{
+    const times = [...line.matchAll(new RegExp(BELL_TIME_RE.source,'gi'))].map(m=>cleanBellTime(m[1]));
+    if(times.length<2) return; // need a start & end time to count as a period row
+    const start = times[0], end = times[1];
+    // Passing/class time in minutes, if present as a lone small number on the line.
+    const clsMatch = line.match(/\b(\d{1,3})\s*(?:min|minutes)?\b(?!:)/i);
+    let cls = '—';
+    if(clsMatch){
+      const n = parseInt(clsMatch[1],10);
+      if(!isNaN(n) && n>0 && n<200) cls = String(n);
+    }
+    // Period label = text before the first time, cleaned up.
+    let label = line.slice(0, line.search(BELL_TIME_RE)).replace(/[-:–—]+$/,'').trim();
+    if(!label) label = `Period ${periods.length+1}`;
+    periods.push({ id: nextPid++, period: label, cls, start, end });
+  });
+  return periods;
+}
+async function parsePdfToBellSchedules(file){
+  if (!window.pdfjsLib) throw new Error('PDF reader failed to load');
+  const items = await extractPdfItems(file);
+  if(!items.length) throw new Error('No readable text in PDF');
+  const lines = clusterLines(items, 4).map(l=>l.items.map(it=>it.text).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);
+
+  const schedules = {};
+  let currentName = null;
+  lines.forEach(line=>{
+    const m = line.match(BELL_SCHEDULE_HEADING_RE);
+    const looksLikeHeading = m && !BELL_TIME_RE.test(line);
+    if(looksLikeHeading){
+      currentName = m[1].trim().replace(/\s+/g,' ');
+      // Normalize a bare "Regular" heading to "Regular Day" for consistency with the default.
+      if(/^regular$/i.test(currentName)) currentName = 'Regular Day';
+      if(!schedules[currentName]) schedules[currentName] = [];
+      return;
+    }
+    if(!currentName){
+      // No heading seen yet — assume this is a single regular schedule PDF.
+      currentName = 'Regular Day';
+      if(!schedules[currentName]) schedules[currentName] = [];
+    }
+    const rowPeriods = parseBellLinesToPeriods([line]);
+    if(rowPeriods.length) schedules[currentName].push(...rowPeriods);
+  });
+
+  // Drop any headings that never got period rows under them.
+  Object.keys(schedules).forEach(k=>{ if(!schedules[k].length) delete schedules[k]; });
+  if(!Object.keys(schedules).length) throw new Error('Could not find any period rows in that PDF');
+  return schedules;
+}
+async function handleBellPdfUpload(evt){
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if(!file) return;
+  const statusEl = document.getElementById('bell-pdf-status');
+  statusEl.style.display='block';
+  statusEl.textContent='📄 Reading PDF…';
+  try{
+    const parsed = await parsePdfToBellSchedules(file);
+    const names = Object.keys(parsed);
+    // Merge into existing named schedules (PDF re-upload replaces same-named schedules).
+    names.forEach(name=>{ bellSchedules[name] = parsed[name]; });
+    if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = [];
+    syncLegacyBellFromRegular();
+    statusEl.textContent = `✅ Imported ${names.length} schedule${names.length!==1?'s':''} from the PDF: ${names.join(', ')}. Double-check the times and fix anything that came through oddly.`;
+    await saveAll(); renderAll();
+  }catch(err){
+    console.error('Bell PDF parse error:', err);
+    statusEl.textContent = '⚠️ Couldn\'t automatically read that PDF\'s layout. Use "+ Add Period" to enter it by hand instead.';
+  }
+  setTimeout(()=>{ statusEl.style.display='none'; }, 12000);
+}
+
+// ── Day Of override (assign a saved named schedule to a specific date) ─
+function openDayOfModal(){
+  const sel = document.getElementById('do-schedule');
+  const names = Object.keys(bellSchedules).length ? Object.keys(bellSchedules) : ['Regular Day'];
+  sel.innerHTML = names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  document.getElementById('do-date').value = '';
+  document.getElementById('do-remove-btn').style.display = 'none';
+  openModal('modal-day-of');
+}
+// When a date is picked in the modal, prefill the schedule dropdown + show Remove if one exists.
+document.addEventListener('change', e=>{
+  if(e.target && e.target.id==='do-date'){
+    const key = e.target.value;
+    const existing = bellOverrides[key];
+    const sel = document.getElementById('do-schedule');
+    if(existing && sel) sel.value = existing;
+    document.getElementById('do-remove-btn').style.display = existing ? 'inline-flex' : 'none';
+  }
+});
+async function saveDayOfOverride(){
+  const dateVal = document.getElementById('do-date').value;
+  const schedName = document.getElementById('do-schedule').value;
+  if(!dateVal) return alert('Please pick a date.');
+  if(!schedName || !bellSchedules[schedName]) return alert('Please pick a schedule.');
+  bellOverrides[dateVal] = schedName;
+  closeModal('modal-day-of');
+  await saveAll(); renderAll();
+}
+async function removeDayOfOverrideFromModal(){
+  const dateVal = document.getElementById('do-date').value;
+  if(dateVal) delete bellOverrides[dateVal];
+  closeModal('modal-day-of');
+  await saveAll(); renderAll();
+}
+async function removeDayOfOverride(dateKey){
+  delete bellOverrides[dateKey];
   await saveAll(); renderAll();
 }
 
@@ -2329,8 +2537,9 @@ function ssMealEmptyHTML(meal, uploaded){
 }
 function ssLunchSlideHTML(items, pageNum, totalPages){ return ssMealSlideHTML('lunch', items, pageNum, totalPages); }
 function ssLunchEmptyHTML(uploaded){ return ssMealEmptyHTML('lunch', uploaded); }
-function ssBellSlideHTML(items, pageNum, totalPages){
-  const pageLabel = totalPages>1 ? `Bell Schedule · ${pageNum} of ${totalPages}` : "Bell Schedule";
+function ssBellSlideHTML(items, pageNum, totalPages, scheduleName){
+  const base = scheduleName && scheduleName!=='Regular Day' ? `Bell Schedule · ${scheduleName}` : 'Bell Schedule';
+  const pageLabel = totalPages>1 ? `${base} · ${pageNum} of ${totalPages}` : base;
   const rows = items.map(p=>`<tr><td>${p.period||''}</td><td>${p.cls||''}</td><td>${p.start||''}</td><td>${p.end||''}</td></tr>`).join('');
   return `<div class="ss-title">${pageLabel}</div>
     <table class="ss-table"><thead><tr><th>Period</th><th>Class</th><th>Start</th><th>End</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -2394,12 +2603,13 @@ function buildSlideQueue(){
     pages.forEach((pg,i)=> slideQueue.push(()=>ssMealSlideHTML('afs', pg, i+1, pages.length)));
   }
 
-  const periods = bell||[];
+  const activeInfo = (typeof activeBellScheduleInfo==='function') ? activeBellScheduleInfo() : {name:'Regular Day'};
+  const periods = (bellSchedules && bellSchedules[activeInfo.name]) ? bellSchedules[activeInfo.name] : (bell||[]);
   if(!periods.length){
     slideQueue.push(ssBellEmptyHTML);
   } else {
     const pages = chunk(periods, SS_MAX_BELL_PER_SLIDE);
-    pages.forEach((pg,i)=> slideQueue.push(()=>ssBellSlideHTML(pg, i+1, pages.length)));
+    pages.forEach((pg,i)=> slideQueue.push(()=>ssBellSlideHTML(pg, i+1, pages.length, activeInfo.name)));
   }
 
   if(!slideQueue.length) slideQueue.push(()=> `<div class="ss-empty"><span class="ss-icon">👋</span>Nothing to show yet</div>`);

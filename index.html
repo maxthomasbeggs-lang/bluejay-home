@@ -920,11 +920,21 @@ let nextAid=2, nextTid=4, nextGid=1, nextCid=4, nextPid=8, nextEid=1;
 async function saveAll() {
   if (!sb) { saveLocalStorage(); setSyncStatus('ok','Offline'); return; }
   setSyncStatus('syncing','Saving…');
-  const { error } = await sb.from('school_state').upsert({
-    id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events,
-    bellSchedules, bellOverrides,
-    meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
-  });
+  let error;
+  try {
+    const res = await sb.from('school_state').upsert({
+      id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events,
+      bellSchedules, bellOverrides,
+      meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
+    });
+    error = res.error;
+  } catch (e) {
+    // fetch() itself threw (offline, DNS failure, blocked request, CORS, etc.) —
+    // Supabase-js doesn't wrap this in {error}, it rejects, so we must catch it here.
+    error = { message: e.message || String(e), hint: 'The app could not reach Supabase. Check your internet connection, that the Supabase URL is correct and the project is not paused, and that nothing (like an ad-blocker) is blocking the request.' };
+    // Keep a local copy so unsaved edits aren't lost while offline.
+    saveLocalStorage();
+  }
   if (error) {
     console.error('SAVE ERROR:', JSON.stringify(error));
     setSyncStatus('error','Error');
@@ -1049,7 +1059,19 @@ function applyState(row) {
 async function startListening() {
   if (!sb) { loadLocalStorage(); if(!menu){ applyState(null);} renderAll(); hideLoader(); return; }
   setSyncStatus('syncing','Connecting…');
-  const { data, error } = await sb.from('school_state').select('*').eq('id',1).single();
+  let data, error;
+  try {
+    const res = await sb.from('school_state').select('*').eq('id',1).single();
+    data = res.data; error = res.error;
+  } catch (e) {
+    // Network-level failure (offline, DNS, blocked request) — fall back to
+    // whatever we have locally rather than getting stuck on the loading screen.
+    console.error('LOAD ERROR (network):', e);
+    setSyncStatus('error','Offline');
+    loadLocalStorage();
+    if(!menu){ applyState(null); } else { renderAll(); hideLoader(); }
+    return;
+  }
   if (error && error.code !== 'PGRST116') {
     console.error('LOAD ERROR:', JSON.stringify(error));
     setSyncStatus('error','Offline');

@@ -463,12 +463,10 @@
     <div id="menu-pdf-status-lunch" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <button id="lunchPrevBtn-lunch" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('lunch',-1)" title="Previous week">‹</button>
       <div style="flex:1;text-align:center;min-width:150px">
         <div id="lunchWeekLabel-lunch" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
         <div id="lunchWeekSub-lunch" style="font-size:11px;color:var(--text3)"></div>
       </div>
-      <button id="lunchNextBtn-lunch" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('lunch',1)" title="Next week">›</button>
     </div>
     <div id="lunchBackWrap-lunch" style="display:none;text-align:center;margin-bottom:16px;">
       <button class="btn btn-ghost" onclick="backToWeekView('lunch')">← Back to Week View</button>
@@ -488,12 +486,10 @@
     <div id="menu-pdf-status-dinner" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <button id="lunchPrevBtn-dinner" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('dinner',-1)" title="Previous week">‹</button>
       <div style="flex:1;text-align:center;min-width:150px">
         <div id="lunchWeekLabel-dinner" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
         <div id="lunchWeekSub-dinner" style="font-size:11px;color:var(--text3)"></div>
       </div>
-      <button id="lunchNextBtn-dinner" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('dinner',1)" title="Next week">›</button>
     </div>
     <div id="lunchBackWrap-dinner" style="display:none;text-align:center;margin-bottom:16px;">
       <button class="btn btn-ghost" onclick="backToWeekView('dinner')">← Back to Week View</button>
@@ -513,12 +509,10 @@
     <div id="menu-pdf-status-afs" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <button id="lunchPrevBtn-afs" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('afs',-1)" title="Previous week">‹</button>
       <div style="flex:1;text-align:center;min-width:150px">
         <div id="lunchWeekLabel-afs" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:700;"></div>
         <div id="lunchWeekSub-afs" style="font-size:11px;color:var(--text3)"></div>
       </div>
-      <button id="lunchNextBtn-afs" class="icon-btn" style="width:32px;height:32px;flex-shrink:0" onclick="shiftWeek('afs',1)" title="Next week">›</button>
     </div>
     <div id="lunchBackWrap-afs" style="display:none;text-align:center;margin-bottom:16px;">
       <button class="btn btn-ghost" onclick="backToWeekView('afs')">← Back to Week View</button>
@@ -1069,6 +1063,24 @@ function normalizeMenu(m){
   }
   return { weeks: [] };
 }
+// Keeps only the week containing today's date (by its Mon–Fri range); drops every other week,
+// past or future. Weeks with no parseable dates are left alone (nothing to compare). Returns
+// true if anything was actually removed, so the caller knows whether to persist the change.
+function pruneMenuToCurrentWeek(menuObj){
+  if(!menuObj || !Array.isArray(menuObj.weeks) || !menuObj.weeks.length) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const keep = [];
+  menuObj.weeks.forEach(week=>{
+    const dates = (week.days||[]).map(d=>parseMenuDate(d.date)).filter(Boolean);
+    if(!dates.length){ return; } // no dates to judge by — drop it, nothing to anchor "current" to
+    const min = new Date(Math.min(...dates.map(d=>d.getTime())));
+    const max = new Date(Math.max(...dates.map(d=>d.getTime())));
+    if(today>=min && today<=max) keep.push(week);
+  });
+  const changed = keep.length !== menuObj.weeks.length;
+  menuObj.weeks = keep;
+  return changed;
+}
 
 // ── Hide loading screen once data is ready ────────────────────
 function hideLoader() {
@@ -1117,9 +1129,13 @@ function applyState(row) {
   menu    = normalizeMenu(row.menu);
   dinnerMenu = normalizeMenu(row.dinnerMenu);
   afsMenu = normalizeMenu(row.afsMenu);
-  MEAL_STATE.lunch.weekIdx = pickCurrentWeekIndex(menu.weeks);
-  MEAL_STATE.dinner.weekIdx = pickCurrentWeekIndex(dinnerMenu.weeks);
-  MEAL_STATE.afs.weekIdx = pickCurrentWeekIndex(afsMenu.weeks);
+  // Keep only the current week for each meal menu — past and future weeks are dropped automatically.
+  const lunchPruned  = pruneMenuToCurrentWeek(menu);
+  const dinnerPruned = pruneMenuToCurrentWeek(dinnerMenu);
+  const afsPruned     = pruneMenuToCurrentWeek(afsMenu);
+  MEAL_STATE.lunch.weekIdx = 0;
+  MEAL_STATE.dinner.weekIdx = 0;
+  MEAL_STATE.afs.weekIdx = 0;
   if (row.meta) {
     nextAid = row.meta.nextAid || nextAid;
     nextTid = row.meta.nextTid || nextTid;
@@ -1131,7 +1147,7 @@ function applyState(row) {
   setSyncStatus('ok','Live');
   renderAll();
   hideLoader();
-  if(bellSchedulesBackfilled) saveAll(); // persist the backfilled schedules so future loads don't need to redo this
+  if(bellSchedulesBackfilled || lunchPruned || dinnerPruned || afsPruned) saveAll(); // persist any auto-cleanup so future loads don't need to redo this
 }
 
 // ── Load + subscribe ─────────────────────────────────────────
@@ -1581,16 +1597,12 @@ function renderMenu(meal){
   const labelEl = document.getElementById('lunchWeekLabel-'+meal);
   const subEl = document.getElementById('lunchWeekSub-'+meal);
   const clearBtn = document.getElementById('clearExpiredMenuBtn-'+meal);
-  const prevBtn = document.getElementById('lunchPrevBtn-'+meal);
-  const nextBtn = document.getElementById('lunchNextBtn-'+meal);
   const backWrap = document.getElementById('lunchBackWrap-'+meal);
   if(!grid) return;
   if(clearBtn) clearBtn.style.display = (!st.viewDay && menuHasExpired(meal)) ? 'inline-flex' : 'none';
 
   if(st.viewDay){
-    // Focused single-day view — hides week navigation.
-    if(prevBtn) prevBtn.style.display='none';
-    if(nextBtn) nextBtn.style.display='none';
+    // Focused single-day view.
     if(backWrap) backWrap.style.display='block';
     labelEl.textContent = st.viewDay.dayName + (st.viewDay.dateLabel ? ' · '+st.viewDay.dateLabel : '');
     subEl.textContent = 'Single day';
@@ -1601,20 +1613,18 @@ function renderMenu(meal){
       <h4>${st.viewDay.dayName}${st.viewDay.dateLabel?' · '+st.viewDay.dateLabel:''}</h4>${items}</div>`;
     return;
   }
-  if(prevBtn) prevBtn.style.display='';
-  if(nextBtn) nextBtn.style.display='';
   if(backWrap) backWrap.style.display='none';
 
   if(!m || !m.weeks || !m.weeks.length){
     grid.innerHTML=`<div class="empty-state"><div class="icon">${MEAL_ICON[meal]}</div><p>No ${MEAL_LABELS[meal]} menu yet.<br>Upload the monthly PDF above to get started.</p></div>`;
-    labelEl.textContent='No weeks yet';
+    labelEl.textContent='No menu yet';
     subEl.textContent='';
     return;
   }
-  st.weekIdx = Math.max(0, Math.min(st.weekIdx, m.weeks.length-1));
-  const week = m.weeks[st.weekIdx];
-  labelEl.textContent = week.weekOf || ('Week '+(st.weekIdx+1));
-  subEl.textContent = 'Week '+(st.weekIdx+1)+' of '+m.weeks.length;
+  st.weekIdx = 0;
+  const week = m.weeks[0];
+  labelEl.textContent = week.weekOf || 'This Week';
+  subEl.textContent = 'Week of';
   const today = new Date(); today.setHours(0,0,0,0);
   grid.innerHTML = WEEKDAYS.map(dayName=>{
     const d = (week.days||[]).find(x=>x.day===dayName) || {items:[]};
@@ -1631,14 +1641,6 @@ function renderAllMeals(){
 }
 function backToWeekView(meal){
   MEAL_STATE[meal].viewDay = null;
-  renderMenu(meal);
-}
-function shiftWeek(meal, delta){
-  const st = MEAL_STATE[meal];
-  const m = mealMenu(meal);
-  if(st.viewDay) return;
-  if(!m || !m.weeks || !m.weeks.length) return;
-  st.weekIdx = (st.weekIdx + delta + m.weeks.length) % m.weeks.length;
   renderMenu(meal);
 }
 const MEAL_TAB_TITLE = {
@@ -2013,10 +2015,14 @@ async function handleMenuPdfUpload(evt, meal){
   statusEl.textContent='📄 Reading PDF…';
   try{
     const weeks = await parsePdfToWeeks(file);
-    setMealMenu(meal, { weeks });
-    MEAL_STATE[meal].weekIdx = pickCurrentWeekIndex(weeks);
+    const menuObj = { weeks };
+    pruneMenuToCurrentWeek(menuObj); // a monthly PDF has many weeks — keep only the one that covers today
+    setMealMenu(meal, menuObj);
+    MEAL_STATE[meal].weekIdx = 0;
     MEAL_STATE[meal].viewDay = null;
-    statusEl.textContent = `✅ Imported ${weeks.length} week${weeks.length!==1?'s':''} from the PDF. Check "Edit Week" and fix anything that came through oddly.`;
+    statusEl.textContent = menuObj.weeks.length
+      ? `✅ Imported the current week from the PDF (other weeks in the file were skipped). Check "Edit Week" and fix anything that came through oddly.`
+      : `⚠️ Imported ${weeks.length} week${weeks.length!==1?'s':''} from the PDF, but none of them cover today's date — nothing to show yet. Check "Edit Week" or add today's menu with "+ Add ${MEAL_MODAL_BTN[meal].replace('Add ','')}".`;
     await saveAll(); renderAll();
   }catch(err){
     console.error('PDF parse error:', err);

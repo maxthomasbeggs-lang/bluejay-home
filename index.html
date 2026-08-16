@@ -535,6 +535,7 @@
     <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('bell-pdf-input').click())">📄 Upload Bell Schedule PDF</button>
     <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('bell-img-input').click())">📷 Add Schedule from Screenshot</button>
     <button class="btn btn-ghost stuco-only" onclick="requireAuth(openDayOfModal)">📌 Day Of…</button>
+    <button class="btn btn-ghost stuco-only" onclick="requireAuth(openWeeklyLoopModal)">🔁 Weekly Loop…</button>
   </div>
   <input type="file" id="bell-pdf-input" accept="application/pdf" style="display:none" onchange="handleBellPdfUpload(event)" />
   <input type="file" id="bell-img-input" accept="image/*" style="display:none" onchange="handleBellImageUpload(event)" />
@@ -749,7 +750,7 @@
 <div class="modal-bg" id="modal-day-of">
   <div class="modal">
     <h2>Day Of Schedule</h2>
-    <p style="font-size:12.5px;color:var(--text3);margin:-6px 0 14px;line-height:1.6;">Assign a saved bell schedule to a specific date. On that date, the Bell tab will automatically show this schedule instead of Regular Day — then switch back on its own.</p>
+    <p style="font-size:12.5px;color:var(--text3);margin:-6px 0 14px;line-height:1.6;">Assign a saved bell schedule to a specific date. On that date, the Bell tab will automatically show this schedule instead — then switch back on its own.</p>
     <div class="field"><label>Date</label><input id="do-date" type="date" /></div>
     <div class="field"><label>Schedule</label><select id="do-schedule"></select></div>
     <div class="modal-actions" style="justify-content:space-between">
@@ -757,6 +758,22 @@
       <div style="display:flex;gap:10px;margin-left:auto">
         <button class="btn btn-ghost" onclick="closeModal('modal-day-of')">Cancel</button>
         <button class="btn btn-primary" onclick="saveDayOfOverride()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-weekly-loop">
+  <div class="modal">
+    <h2>Weekly Loop</h2>
+    <p style="font-size:12.5px;color:var(--text3);margin:-6px 0 14px;line-height:1.6;">Pick a weekday and a saved schedule. Every week on that day, the Bell tab will automatically show it — on a loop, indefinitely, until you change or remove it here.</p>
+    <div class="field"><label>Weekday</label><select id="wl-weekday"></select></div>
+    <div class="field"><label>Schedule</label><select id="wl-schedule"></select></div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button class="btn btn-danger-ghost" id="wl-remove-btn" style="display:none" onclick="removeWeeklyLoopFromModal()">Turn Off Loop</button>
+      <div style="display:flex;gap:10px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('modal-weekly-loop')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveWeeklyLoop()">Save</button>
       </div>
     </div>
   </div>
@@ -836,6 +853,7 @@ CREATE TABLE IF NOT EXISTS school_state (
   events        JSONB NOT NULL DEFAULT '[]',
   "bellSchedules" JSONB NOT NULL DEFAULT '{}',
   "bellOverrides" JSONB NOT NULL DEFAULT '{}',
+  "bellWeekdayRules" JSONB NOT NULL DEFAULT '{}',
   meta          JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -845,6 +863,7 @@ CREATE TABLE IF NOT EXISTS school_state (
 -- If you already created this table before named Bell Schedules existed, run this once:
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellSchedules" JSONB NOT NULL DEFAULT '{}';
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellOverrides" JSONB NOT NULL DEFAULT '{}';
+-- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellWeekdayRules" JSONB NOT NULL DEFAULT '{}';
 
 INSERT INTO school_state (id) VALUES (1) ON CONFLICT DO NOTHING;
 
@@ -888,20 +907,39 @@ const DEFAULT_CLUBS = [
   {id:3, name:'Art Club', sponsor:'Mrs. Kim', day:'Thursdays', time:'3:15–4:00 PM', room:'Art Room', desc:'Open studio time for painting, drawing, and crafts.'},
 ];
 const DEFAULT_BELL = [
-  {id:1, period:'1st Period', cls:'—', start:'7:50 AM', end:'8:10 AM'},
-  {id:2, period:'2nd Period', cls:'5', start:'8:15 AM', end:'9:20 AM'},
-  {id:3, period:'3rd Period', cls:'5', start:'9:25 AM', end:'10:30 AM'},
-  {id:4, period:'Lunch', cls:'—', start:'10:30 AM', end:'11:10 AM'},
-  {id:5, period:'4th Period', cls:'5', start:'11:15 AM', end:'12:20 PM'},
-  {id:6, period:'5th Period', cls:'5', start:'12:25 PM', end:'1:30 PM'},
-  {id:7, period:'6th Period', cls:'5', start:'1:35 PM', end:'2:35 PM'},
+  {id:1, period:'Breakfast', cls:'—', start:'7:30 AM', end:'7:45 AM'},
+  {id:2, period:'Period 1', cls:'4', start:'7:50 AM', end:'8:34 AM'},
+  {id:3, period:'Period 2', cls:'4', start:'8:38 AM', end:'9:22 AM'},
+  {id:4, period:'Period 3', cls:'4', start:'9:26 AM', end:'10:10 AM'},
+  {id:5, period:'Period 4', cls:'4', start:'10:14 AM', end:'10:58 AM'},
+  {id:6, period:'Jay Hour', cls:'4', start:'11:02 AM', end:'12:27 PM'},
+  {id:7, period:'Period 5', cls:'4', start:'12:31 PM', end:'1:15 PM'},
+  {id:8, period:'Period 6', cls:'4', start:'1:19 PM', end:'2:03 PM'},
+  {id:9, period:'Period 7', cls:'4', start:'2:07 PM', end:'2:55 PM'},
+];
+const DEFAULT_WEDNESDAY_BELL = [
+  {id:101, period:'Breakfast', cls:'—', start:'7:30 AM', end:'7:45 AM'},
+  {id:102, period:'Period 1', cls:'4', start:'7:50 AM', end:'8:22 AM'},
+  {id:103, period:'Period 2', cls:'4', start:'8:26 AM', end:'8:58 AM'},
+  {id:104, period:'Period 3', cls:'4', start:'9:02 AM', end:'9:34 AM'},
+  {id:105, period:'Period 4', cls:'4', start:'9:38 AM', end:'10:10 AM'},
+  {id:106, period:'Advisory', cls:'4', start:'10:14 AM', end:'11:39 AM'},
+  {id:107, period:'Period 5', cls:'4', start:'11:43 AM', end:'12:15 PM'},
+  {id:108, period:'Period 6', cls:'4', start:'12:19 PM', end:'12:51 PM'},
+  {id:109, period:'Period 7', cls:'4', start:'12:55 PM', end:'1:30 PM'},
 ];
 const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 // Named bell schedules, e.g. { "Regular Day": [ {period,cls,start,end}, ... ], "Early Release": [...] }
 // "Regular Day" always exists and mirrors the legacy `bell` array.
-const DEFAULT_BELL_SCHEDULES = { 'Regular Day': DEFAULT_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})) };
-// Dated overrides: { "2026-10-15": "Assembly Day" } — a saved schedule name assigned to a specific date.
+const DEFAULT_BELL_SCHEDULES = {
+  'Regular Day': DEFAULT_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})),
+  'Wednesday': DEFAULT_WEDNESDAY_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})),
+};
+// Dated overrides: { "2026-10-15": "Assembly Day" } — a saved schedule name assigned to a specific date. Wins over weekday rules.
 const DEFAULT_BELL_OVERRIDES = {};
+// Weekly recurring rules: { "Wednesday": "Wednesday" } — a saved schedule that auto-shows every week on that weekday.
+// Loops indefinitely until changed or removed. Regular Day is the fallback for any weekday without a rule.
+const DEFAULT_BELL_WEEKDAY_RULES = { 'Wednesday': 'Wednesday' };
 const DEFAULT_MENU = { weeks: [] }; // starts empty — upload a monthly PDF or use "+ Add Week"
 const DEFAULT_ANNOUNCEMENTS = [
   {id:1, title:'Welcome Back!', date:'Aug 12', body:'We are excited to kick off the new school year. Check this hub for the latest sports schedules, club meetings, and lunch menus.'}
@@ -910,7 +948,7 @@ const DEFAULT_EVENTS = [];
 
 // ── In-memory state ──────────────────────────────────────────
 let announcements=[], teams=[], clubs=[], bell=[], events=[], menu=null, dinnerMenu=null, afsMenu=null;
-let bellSchedules={}, bellOverrides={};
+let bellSchedules={}, bellOverrides={}, bellWeekdayRules={};
 let mealView = 'lunch'; // 'lunch' | 'dinner' (dinner view shows both Dinner & AFS)
 const MEAL_STATE = {
   lunch: { get menu(){return menu;}, set menu(v){menu=v;}, weekIdx:0, viewDay:null },
@@ -927,7 +965,7 @@ async function saveAll() {
   try {
     const res = await sb.from('school_state').upsert({
       id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events,
-      bellSchedules, bellOverrides,
+      bellSchedules, bellOverrides, bellWeekdayRules,
       meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
     });
     error = res.error;
@@ -966,7 +1004,7 @@ async function saveAll() {
 
 function saveLocalStorage(){
   try{
-    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events, bellSchedules, bellOverrides, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
+    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, bell, events, bellSchedules, bellOverrides, bellWeekdayRules, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
     // Note: localStorage is used only as an offline fallback when Supabase isn't configured.
     window.__rmsStateFallback = state;
   }catch(e){}
@@ -992,6 +1030,7 @@ async function resetAllData() {
   announcements=[]; teams=[]; clubs=[]; bell=[]; events=[];
   bellSchedules = { 'Regular Day': [] };
   bellOverrides = {};
+  bellWeekdayRules = {};
   menu = { weeks: [] };
   dinnerMenu = { weeks: [] };
   afsMenu = { weeks: [] };
@@ -1031,12 +1070,13 @@ function applyState(row) {
     bell    = DEFAULT_BELL.map(b=>({...b}));
     bellSchedules = JSON.parse(JSON.stringify(DEFAULT_BELL_SCHEDULES));
     bellOverrides = JSON.parse(JSON.stringify(DEFAULT_BELL_OVERRIDES));
+    bellWeekdayRules = JSON.parse(JSON.stringify(DEFAULT_BELL_WEEKDAY_RULES));
     events  = DEFAULT_EVENTS.map(e=>({...e}));
     menu    = JSON.parse(JSON.stringify(DEFAULT_MENU));
     dinnerMenu = { weeks: [] };
     afsMenu = { weeks: [] };
     MEAL_STATE.lunch.weekIdx = MEAL_STATE.dinner.weekIdx = MEAL_STATE.afs.weekIdx = 0;
-    nextAid=2; nextTid=4; nextGid=1; nextCid=4; nextPid=8; nextEid=1;
+    nextAid=2; nextTid=4; nextGid=1; nextCid=4; nextPid=110; nextEid=1;
     saveAll();
     renderAll(); hideLoader();
     return;
@@ -1048,6 +1088,7 @@ function applyState(row) {
   bellSchedules = (row.bellSchedules && Object.keys(row.bellSchedules).length) ? row.bellSchedules : { 'Regular Day': bell.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})) };
   if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = bell.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end}));
   bellOverrides = row.bellOverrides || {};
+  bellWeekdayRules = row.bellWeekdayRules || {};
   events  = row.events  || [];
   menu    = normalizeMenu(row.menu);
   dinnerMenu = normalizeMenu(row.dinnerMenu);
@@ -1962,12 +2003,22 @@ async function handleMenuPdfUpload(evt, meal){
 // ── Render: Bell Schedule ────────────────────────────────────
 // Returns { name, isOverride, dateLabel } for whichever schedule should show today.
 function activeBellScheduleInfo(){
-  const todayKey = localDateKey(new Date());
+  const now = new Date();
+  const todayKey = localDateKey(now);
+  // 1. A one-off dated override always wins (e.g. a pep rally schedule on a specific date).
   const overrideName = bellOverrides[todayKey];
   if(overrideName && bellSchedules[overrideName]){
-    return { name: overrideName, isOverride:true, dateKey: todayKey };
+    return { name: overrideName, isOverride:true, isWeekdayRule:false, dateKey: todayKey };
   }
-  return { name: 'Regular Day', isOverride:false, dateKey: todayKey };
+  // 2. A recurring weekday rule (e.g. every Wednesday) — loops indefinitely until changed/removed.
+  const dow = now.getDay(); // 0=Sun..6=Sat
+  const weekdayName = (dow>=1 && dow<=5) ? WEEKDAYS[dow-1] : null; // map Mon..Fri to WEEKDAYS[0..4]; null on weekends
+  const ruleSchedule = weekdayName ? bellWeekdayRules[weekdayName] : null;
+  if(ruleSchedule && bellSchedules[ruleSchedule]){
+    return { name: ruleSchedule, isOverride:false, isWeekdayRule:true, weekday:weekdayName, dateKey: todayKey };
+  }
+  // 3. Fallback: Regular Day.
+  return { name: 'Regular Day', isOverride:false, isWeekdayRule:false, dateKey: todayKey };
 }
 function localDateKey(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
@@ -1982,14 +2033,22 @@ function renderBell(){
   if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = [];
   const info = activeBellScheduleInfo();
   const sub = document.getElementById('bellSectionSub');
-  if(sub) sub.textContent = info.isOverride ? `${info.name} — today only` : 'Regular day period times';
+  if(sub){
+    if(info.isOverride) sub.textContent = `${info.name} — today only`;
+    else if(info.isWeekdayRule) sub.textContent = `${info.name} schedule — every ${info.weekday}`;
+    else sub.textContent = 'Regular day period times';
+  }
 
   const banner = document.getElementById('bellOverrideBanner');
   if(banner){
     if(info.isOverride){
       banner.style.display='flex';
-      banner.innerHTML = `<span>📌 Today is showing the <strong>${info.name}</strong> schedule. It'll switch back to Regular Day automatically after today.</span>
+      banner.innerHTML = `<span>📌 Today is showing the <strong>${info.name}</strong> schedule. It'll switch back automatically after today.</span>
         <button class="btn btn-ghost stuco-only" style="padding:6px 12px;font-size:12px" onclick="requireAuth(()=>removeDayOfOverride('${info.dateKey}'))">Remove</button>`;
+    } else if(info.isWeekdayRule){
+      banner.style.display='flex';
+      banner.innerHTML = `<span>🔁 Every <strong>${info.weekday}</strong> automatically shows the <strong>${info.name}</strong> schedule, on a loop until changed.</span>
+        <button class="btn btn-ghost stuco-only" style="padding:6px 12px;font-size:12px" onclick="requireAuth(()=>removeWeekdayRule('${info.weekday}'))">Turn off</button>`;
     } else {
       banner.style.display='none';
     }
@@ -2203,6 +2262,43 @@ async function removeDayOfOverrideFromModal(){
 }
 async function removeDayOfOverride(dateKey){
   delete bellOverrides[dateKey];
+  await saveAll(); renderAll();
+}
+async function removeWeekdayRule(weekday){
+  delete bellWeekdayRules[weekday];
+  await saveAll(); renderAll();
+}
+
+// ── Weekly Loop modal (recurring weekday → schedule rule) ─────
+function openWeeklyLoopModal(){
+  const daySel = document.getElementById('wl-weekday');
+  daySel.innerHTML = WEEKDAYS.map(d=>`<option value="${d}">${d}</option>`).join('');
+  const schedSel = document.getElementById('wl-schedule');
+  const names = Object.keys(bellSchedules).length ? Object.keys(bellSchedules) : ['Regular Day'];
+  schedSel.innerHTML = names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  const applyWeekdaySelection = ()=>{
+    const wd = daySel.value;
+    const existing = bellWeekdayRules[wd];
+    if(existing && schedSel.querySelector(`option[value="${existing}"]`)) schedSel.value = existing;
+    document.getElementById('wl-remove-btn').style.display = existing ? 'inline-flex' : 'none';
+  };
+  daySel.onchange = applyWeekdaySelection;
+  applyWeekdaySelection();
+  openModal('modal-weekly-loop');
+}
+async function saveWeeklyLoop(){
+  const weekday = document.getElementById('wl-weekday').value;
+  const schedName = document.getElementById('wl-schedule').value;
+  if(!weekday) return alert('Please pick a weekday.');
+  if(!schedName || !bellSchedules[schedName]) return alert('Please pick a schedule.');
+  bellWeekdayRules[weekday] = schedName;
+  closeModal('modal-weekly-loop');
+  await saveAll(); renderAll();
+}
+async function removeWeeklyLoopFromModal(){
+  const weekday = document.getElementById('wl-weekday').value;
+  if(weekday) delete bellWeekdayRules[weekday];
+  closeModal('modal-weekly-loop');
   await saveAll(); renderAll();
 }
 

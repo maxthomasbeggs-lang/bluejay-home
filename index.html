@@ -333,7 +333,7 @@
     <button class="nav-link" onclick="showSection('announcements')"><span class="nav-icon">📣</span><span class="nav-label">News</span></button>
     <button class="nav-link" onclick="showSection('sports')"><span class="nav-icon">🏆</span><span class="nav-label">Sports</span></button>
     <button class="nav-link" onclick="showSection('clubs')"><span class="nav-icon">🎭</span><span class="nav-label">Clubs</span></button>
-    <button class="nav-link" onclick="showSection('lunch')"><span class="nav-icon">🍽️</span><span class="nav-label">Meals</span></button>
+    <button class="nav-link" onclick="showSection('lunch')"><span class="nav-icon">🍽️</span><span class="nav-label">Lunch</span></button>
     <button class="nav-link" onclick="showSection('bell')"><span class="nav-icon">🔔</span><span class="nav-label">Classes</span></button>
     <button class="nav-link" onclick="showSection('calendar')"><span class="nav-icon">📅</span><span class="nav-label">Calendar</span></button>
   </nav>
@@ -398,7 +398,7 @@
   <div class="quicklinks">
     <button class="quicklink" onclick="showSection('sports')">🏆 Sports</button>
     <button class="quicklink" onclick="showSection('clubs')">🎭 Clubs</button>
-    <button class="quicklink" onclick="showSection('lunch')">🍽️ Today's Meals</button>
+    <button class="quicklink" onclick="showSection('lunch')">🍽️ Today's Lunch</button>
     <button class="quicklink" onclick="showSection('calendar')">📅 What's Next</button>
   </div>
 </div>
@@ -871,6 +871,7 @@ CREATE TABLE IF NOT EXISTS school_state (
   "dinnerMenu"  JSONB NOT NULL DEFAULT '{}',
   "afsMenu"     JSONB NOT NULL DEFAULT '{}',
   "breakfastMenu" JSONB NOT NULL DEFAULT '{}',
+  "mealWeeklyMenus" JSONB NOT NULL DEFAULT '{}',
   bell          JSONB NOT NULL DEFAULT '[]',
   events        JSONB NOT NULL DEFAULT '[]',
   "bellSchedules" JSONB NOT NULL DEFAULT '{}',
@@ -883,6 +884,7 @@ CREATE TABLE IF NOT EXISTS school_state (
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "dinnerMenu" JSONB NOT NULL DEFAULT '{}';
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "afsMenu" JSONB NOT NULL DEFAULT '{}';
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "breakfastMenu" JSONB NOT NULL DEFAULT '{}';
+-- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "mealWeeklyMenus" JSONB NOT NULL DEFAULT '{}';
 -- If you already created this table before named Bell Schedules existed, run this once:
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellSchedules" JSONB NOT NULL DEFAULT '{}';
 -- ALTER TABLE school_state ADD COLUMN IF NOT EXISTS "bellOverrides" JSONB NOT NULL DEFAULT '{}';
@@ -976,6 +978,17 @@ const DEFAULT_BELL_OVERRIDES = {};
 // Loops indefinitely until changed or removed. Regular Day is the fallback for any weekday without a rule.
 const DEFAULT_BELL_WEEKDAY_RULES = { 'Wednesday': 'Wednesday' };
 const DEFAULT_MENU = { weeks: [] }; // starts empty — upload a monthly PDF or use "+ Add Week"
+// A weekly-looping meal menu (currently only used for Breakfast): the same 5 weekday items
+// repeat forever, week after week, until changed. Keyed by weekday name -> array of item strings.
+// A manually-added dated entry (via + Add Breakfast) for a specific date always wins over the loop
+// for that one day; the loop resumes automatically the day after.
+const DEFAULT_BREAKFAST_WEEKLY_MENU = {
+  'Monday':    ['Breakfast Pizza or Bagel & Cream Cheese', 'Cinnamon Pop Tarts or Cereal Bowl & Scooby Grahams', 'Applesauce or Bananas', 'Juice', 'Milk'],
+  'Tuesday':   ['French Toast Sticks or Bagel & Cream Cheese', 'Strawberry Pop Tarts or Cereal Bowl & Scooby Grahams', 'Peaches or Bananas', 'Juice', 'Milk'],
+  'Wednesday': ['Super Donut & Yogurt or Bagel & Cream Cheese', 'Fudge Pop Tarts', 'Mixed Fruit or Bananas', 'Juice', 'Milk'],
+  'Thursday':  ['Brkfst Chicken & Biscuit or Bagel & Cream Cheese', 'Pears', 'Juice', 'Milk'],
+  'Friday':    ['Mini Cinnis or Bagel & Cream Cheese', 'Mandarin Oranges', 'Juice', 'Milk'],
+};
 const DEFAULT_ANNOUNCEMENTS = [
   {id:1, title:'Welcome Back!', date:'Aug 12', body:'We are excited to kick off the new school year. Check this hub for the latest sports schedules, club meetings, and lunch menus.'}
 ];
@@ -984,6 +997,9 @@ const DEFAULT_EVENTS = [];
 // ── In-memory state ──────────────────────────────────────────
 let announcements=[], teams=[], clubs=[], bell=[], events=[], menu=null, dinnerMenu=null, afsMenu=null, breakfastMenu=null;
 let bellSchedules={}, bellOverrides={}, bellWeekdayRules={};
+// Weekly-looping meal menus, e.g. { breakfast: { 'Monday': [...], 'Tuesday': [...], ... } }.
+// Only "breakfast" is used today, but this is keyed by meal so any meal could get a loop later.
+let mealWeeklyMenus={};
 let mealView = 'lunch'; // 'breakfast' | 'lunch' | 'dinner' | 'afs'
 const MEAL_STATE = {
   breakfast: { get menu(){return breakfastMenu;}, set menu(v){breakfastMenu=v;}, weekIdx:0, viewDay:null },
@@ -1001,7 +1017,7 @@ async function saveAll() {
   try {
     const res = await sb.from('school_state').upsert({
       id:1, announcements, teams, clubs, menu, dinnerMenu, afsMenu, breakfastMenu, bell, events,
-      bellSchedules, bellOverrides, bellWeekdayRules,
+      bellSchedules, bellOverrides, bellWeekdayRules, mealWeeklyMenus,
       meta:{ nextAid, nextTid, nextGid, nextCid, nextPid, nextEid }
     });
     error = res.error;
@@ -1040,7 +1056,7 @@ async function saveAll() {
 
 function saveLocalStorage(){
   try{
-    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, breakfastMenu, bell, events, bellSchedules, bellOverrides, bellWeekdayRules, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
+    const state = { announcements, teams, clubs, menu, dinnerMenu, afsMenu, breakfastMenu, bell, events, bellSchedules, bellOverrides, bellWeekdayRules, mealWeeklyMenus, meta:{nextAid,nextTid,nextGid,nextCid,nextPid,nextEid} };
     // Note: localStorage is used only as an offline fallback when Supabase isn't configured.
     window.__rmsStateFallback = state;
   }catch(e){}
@@ -1057,7 +1073,7 @@ async function resetAllData() {
     '• Announcements\n' +
     '• Sports teams & games\n' +
     '• Clubs\n' +
-    '• Lunch, Dinner & AFS menus\n' +
+    '• Breakfast, Lunch, Dinner & AFS menus (including any breakfast weekly loop)\n' +
     '• Bell schedule (all named schedules & day overrides)\n' +
     '• Calendar events\n\n' +
     'This cannot be undone. Continue?'
@@ -1067,6 +1083,7 @@ async function resetAllData() {
   bellSchedules = { 'Regular Day': [] };
   bellOverrides = {};
   bellWeekdayRules = {};
+  mealWeeklyMenus = {};
   menu = { weeks: [] };
   dinnerMenu = { weeks: [] };
   afsMenu = { weeks: [] };
@@ -1126,6 +1143,7 @@ function applyState(row) {
     bellSchedules = JSON.parse(JSON.stringify(DEFAULT_BELL_SCHEDULES));
     bellOverrides = JSON.parse(JSON.stringify(DEFAULT_BELL_OVERRIDES));
     bellWeekdayRules = JSON.parse(JSON.stringify(DEFAULT_BELL_WEEKDAY_RULES));
+    mealWeeklyMenus = { breakfast: JSON.parse(JSON.stringify(DEFAULT_BREAKFAST_WEEKLY_MENU)) };
     events  = DEFAULT_EVENTS.map(e=>({...e}));
     menu    = JSON.parse(JSON.stringify(DEFAULT_MENU));
     dinnerMenu = { weeks: [] };
@@ -1154,6 +1172,20 @@ function applyState(row) {
   });
   bellOverrides = row.bellOverrides || {};
   bellWeekdayRules = row.bellWeekdayRules || {};
+  mealWeeklyMenus = row.mealWeeklyMenus || {};
+  // Backfill the built-in breakfast weekly loop if this saved row predates it, or is missing any weekday.
+  let mealWeeklyMenusBackfilled = false;
+  if(!mealWeeklyMenus.breakfast || !Object.keys(mealWeeklyMenus.breakfast).length){
+    mealWeeklyMenus.breakfast = JSON.parse(JSON.stringify(DEFAULT_BREAKFAST_WEEKLY_MENU));
+    mealWeeklyMenusBackfilled = true;
+  } else {
+    WEEKDAYS.forEach(dn=>{
+      if(!mealWeeklyMenus.breakfast[dn] && DEFAULT_BREAKFAST_WEEKLY_MENU[dn]){
+        mealWeeklyMenus.breakfast[dn] = JSON.parse(JSON.stringify(DEFAULT_BREAKFAST_WEEKLY_MENU[dn]));
+        mealWeeklyMenusBackfilled = true;
+      }
+    });
+  }
   events  = row.events  || [];
   menu    = normalizeMenu(row.menu);
   dinnerMenu = normalizeMenu(row.dinnerMenu);
@@ -1179,7 +1211,7 @@ function applyState(row) {
   setSyncStatus('ok','Live');
   renderAll();
   hideLoader();
-  if(bellSchedulesBackfilled || lunchPruned || dinnerPruned || afsPruned || breakfastPruned) saveAll(); // persist any auto-cleanup so future loads don't need to redo this
+  if(bellSchedulesBackfilled || lunchPruned || dinnerPruned || afsPruned || breakfastPruned || mealWeeklyMenusBackfilled) saveAll(); // persist any auto-cleanup so future loads don't need to redo this
 }
 
 // ── Load + subscribe ─────────────────────────────────────────
@@ -1647,7 +1679,23 @@ function renderMenu(meal){
   }
   if(backWrap) backWrap.style.display='none';
 
-  if(!m || !m.weeks || !m.weeks.length){
+  const loop = mealWeeklyMenus && mealWeeklyMenus[meal];
+  if((!m || !m.weeks || !m.weeks.length)){
+    if(loop && Object.keys(loop).length){
+      // No dated week on file, but this meal has a weekly loop — show it as the recurring menu.
+      labelEl.textContent = 'Weekly Menu (repeats every week)';
+      subEl.textContent = 'On a loop until changed';
+      const today = new Date(); today.setHours(0,0,0,0);
+      const todayWeekday = (()=>{ const dow=new Date().getDay(); return (dow>=1&&dow<=5)?WEEKDAYS[dow-1]:null; })();
+      grid.innerHTML = WEEKDAYS.map(dayName=>{
+        const items = loop[dayName] && loop[dayName].length
+          ? loop[dayName].map(it=>`<div class="menu-item"><span>${it}</span></div>`).join('')
+          : '<div class="menu-item" style="color:var(--text3)">—</div>';
+        const isToday = dayName===todayWeekday;
+        return `<div class="menu-day${isToday?' is-today':''}"><h4>${dayName}${isToday?' <span class="today-badge">Today</span>':''}</h4>${items}</div>`;
+      }).join('');
+      return;
+    }
     grid.innerHTML=`<div class="empty-state"><div class="icon">${MEAL_ICON[meal]}</div><p>No ${MEAL_LABELS[meal]} menu yet.<br>Upload the monthly PDF above to get started.</p></div>`;
     labelEl.textContent='No menu yet';
     subEl.textContent='';
@@ -1656,16 +1704,21 @@ function renderMenu(meal){
   st.weekIdx = 0;
   const week = m.weeks[0];
   labelEl.textContent = week.weekOf || 'This Week';
-  subEl.textContent = 'Week of';
+  subEl.textContent = loop ? 'Week of · blank days fall back to the weekly loop' : 'Week of';
   const today = new Date(); today.setHours(0,0,0,0);
   grid.innerHTML = WEEKDAYS.map(dayName=>{
     const d = (week.days||[]).find(x=>x.day===dayName) || {items:[]};
     const dDate = parseMenuDate(d.date);
     const isToday = dDate && dDate.getTime()===today.getTime();
-    const items = d.items && d.items.length
-      ? d.items.map(it=>`<div class="menu-item"><span>${it}</span></div>`).join('')
+    const hasDatedItems = d.items && d.items.length;
+    const loopItems = loop ? (loop[dayName]||[]) : [];
+    const displayItems = hasDatedItems ? d.items : loopItems;
+    const usingLoop = !hasDatedItems && loopItems.length>0;
+    const items = displayItems.length
+      ? displayItems.map(it=>`<div class="menu-item"><span>${it}</span></div>`).join('')
       : '<div class="menu-item" style="color:var(--text3)">—</div>';
-    return `<div class="menu-day${isToday?' is-today':''}"><h4>${dayName}${d.date?' · '+d.date:''}${isToday?' <span class="today-badge">Today</span>':''}</h4>${items}</div>`;
+    const loopBadge = usingLoop ? ' <span class="today-badge" style="background:var(--bg3);color:var(--text3)">Weekly Loop</span>' : '';
+    return `<div class="menu-day${isToday?' is-today':''}"><h4>${dayName}${d.date?' · '+d.date:''}${isToday?' <span class="today-badge">Today</span>':''}${loopBadge}</h4>${items}</div>`;
   }).join('');
 }
 function renderAllMeals(){
@@ -2072,17 +2125,21 @@ function activeBellScheduleInfo(){
   // 1. A one-off dated override always wins (e.g. a pep rally schedule on a specific date).
   const overrideName = bellOverrides[todayKey];
   if(overrideName && bellSchedules[overrideName]){
-    return { name: overrideName, isOverride:true, isWeekdayRule:false, dateKey: todayKey };
+    return { name: overrideName, isOverride:true, isWeekdayRule:false, isWeekend:false, dateKey: todayKey };
   }
-  // 2. A recurring weekday rule (e.g. every Wednesday) — loops indefinitely until changed/removed.
+  // 2. Weekends have no bell schedule — show "Weekend" instead of falling through to Regular Day.
   const dow = now.getDay(); // 0=Sun..6=Sat
-  const weekdayName = (dow>=1 && dow<=5) ? WEEKDAYS[dow-1] : null; // map Mon..Fri to WEEKDAYS[0..4]; null on weekends
+  if(dow===0 || dow===6){
+    return { name: 'Weekend', isOverride:false, isWeekdayRule:false, isWeekend:true, dateKey: todayKey };
+  }
+  // 3. A recurring weekday rule (e.g. every Wednesday) — loops indefinitely until changed/removed.
+  const weekdayName = WEEKDAYS[dow-1]; // map Mon..Fri to WEEKDAYS[0..4]
   const ruleSchedule = weekdayName ? bellWeekdayRules[weekdayName] : null;
   if(ruleSchedule && bellSchedules[ruleSchedule]){
-    return { name: ruleSchedule, isOverride:false, isWeekdayRule:true, weekday:weekdayName, dateKey: todayKey };
+    return { name: ruleSchedule, isOverride:false, isWeekdayRule:true, isWeekend:false, weekday:weekdayName, dateKey: todayKey };
   }
-  // 3. Fallback: Regular Day.
-  return { name: 'Regular Day', isOverride:false, isWeekdayRule:false, dateKey: todayKey };
+  // 4. Fallback: Regular Day.
+  return { name: 'Regular Day', isOverride:false, isWeekdayRule:false, isWeekend:false, dateKey: todayKey };
 }
 function localDateKey(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
@@ -2098,7 +2155,8 @@ function renderBell(){
   const info = activeBellScheduleInfo();
   const sub = document.getElementById('bellSectionSub');
   if(sub){
-    if(info.isOverride) sub.textContent = `${info.name} — today only`;
+    if(info.isWeekend) sub.textContent = 'Weekend — no school';
+    else if(info.isOverride) sub.textContent = `${info.name} — today only`;
     else if(info.isWeekdayRule) sub.textContent = `${info.name} schedule — every ${info.weekday}`;
     else sub.textContent = 'Regular day period times';
   }
@@ -2118,6 +2176,11 @@ function renderBell(){
     }
   }
 
+  if(info.isWeekend){
+    const body = document.getElementById('bellBody');
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">🎉 It\'s the weekend — no bell schedule today.</td></tr>';
+    return;
+  }
   const periods = bellSchedules[info.name] || [];
   const body = document.getElementById('bellBody');
   if(!periods.length){ body.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">No periods added yet.</td></tr>'; return; }
@@ -2719,16 +2782,32 @@ function todaysEventItems(){
       return va-vb;
     });
 }
+// Returns today's items for a meal that has a weekly loop (currently just breakfast),
+// or null if that meal has no loop configured. Weekends have no loop entry (Mon–Fri only).
+function todaysWeeklyLoopMealItems(meal){
+  const loop = mealWeeklyMenus && mealWeeklyMenus[meal];
+  if(!loop) return null;
+  const dow = new Date().getDay(); // 0=Sun..6=Sat
+  const weekdayName = (dow>=1 && dow<=5) ? WEEKDAYS[dow-1] : null;
+  if(!weekdayName) return []; // weekend — loop has nothing for Sat/Sun
+  return loop[weekdayName] || [];
+}
 function todaysMealItems(meal){
   const m = mealMenu(meal);
-  if(!m || !m.weeks || !m.weeks.length) return null; // null = no menu uploaded
   const today = new Date(); today.setHours(0,0,0,0);
-  for(const week of m.weeks){
-    for(const d of (week.days||[])){
-      const dt = parseMenuDate(d.date);
-      if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
+  // A manually-added dated entry for today always wins, even over a weekly loop.
+  if(m && m.weeks && m.weeks.length){
+    for(const week of m.weeks){
+      for(const d of (week.days||[])){
+        const dt = parseMenuDate(d.date);
+        if(dt && dt.setHours(0,0,0,0)===today.getTime()) return d.items||[];
+      }
     }
   }
+  // No dated entry for today — fall back to a weekly loop if this meal has one.
+  const loopItems = todaysWeeklyLoopMealItems(meal);
+  if(loopItems!==null) return loopItems;
+  if(!m || !m.weeks || !m.weeks.length) return null; // null = no menu uploaded and no loop
   return []; // menu exists but nothing listed for today (weekend / no-school day)
 }
 function todaysLunchItems(){ return todaysMealItems('lunch'); }
@@ -2798,6 +2877,10 @@ function ssBellEmptyHTML(){
   return `<div class="ss-title">Bell Schedule</div>
     <div class="ss-empty"><span class="ss-icon">🔔</span>No periods added yet</div>`;
 }
+function ssBellWeekendHTML(){
+  return `<div class="ss-title">Bell Schedule</div>
+    <div class="ss-empty"><span class="ss-icon">🎉</span>Weekend — no school today</div>`;
+}
 function ssAnnounceSlideHTML(items, pageNum, totalPages){
   const pageLabel = totalPages>1 ? `School News · ${pageNum} of ${totalPages}` : "School News";
   const cards = items.map(a=>`<div class="ss-announce">
@@ -2863,12 +2946,16 @@ function buildSlideQueue(){
   }
 
   const activeInfo = (typeof activeBellScheduleInfo==='function') ? activeBellScheduleInfo() : {name:'Regular Day'};
-  const periods = (bellSchedules && bellSchedules[activeInfo.name]) ? bellSchedules[activeInfo.name] : (bell||[]);
-  if(!periods.length){
-    slideQueue.push(ssBellEmptyHTML);
+  if(activeInfo.isWeekend){
+    slideQueue.push(ssBellWeekendHTML);
   } else {
-    const pages = chunk(periods, SS_MAX_BELL_PER_SLIDE);
-    pages.forEach((pg,i)=> slideQueue.push(()=>ssBellSlideHTML(pg, i+1, pages.length, activeInfo.name)));
+    const periods = (bellSchedules && bellSchedules[activeInfo.name]) ? bellSchedules[activeInfo.name] : (bell||[]);
+    if(!periods.length){
+      slideQueue.push(ssBellEmptyHTML);
+    } else {
+      const pages = chunk(periods, SS_MAX_BELL_PER_SLIDE);
+      pages.forEach((pg,i)=> slideQueue.push(()=>ssBellSlideHTML(pg, i+1, pages.length, activeInfo.name)));
+    }
   }
 
   if(!slideQueue.length) slideQueue.push(()=> `<div class="ss-empty"><span class="ss-icon">👋</span>Nothing to show yet</div>`);

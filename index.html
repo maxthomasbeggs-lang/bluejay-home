@@ -533,9 +533,11 @@
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
     <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('bell-pdf-input').click())">📄 Upload Bell Schedule PDF</button>
+    <button class="btn btn-ghost stuco-only" onclick="requireAuth(()=>document.getElementById('bell-img-input').click())">📷 Add Schedule from Screenshot</button>
     <button class="btn btn-ghost stuco-only" onclick="requireAuth(openDayOfModal)">📌 Day Of…</button>
   </div>
   <input type="file" id="bell-pdf-input" accept="application/pdf" style="display:none" onchange="handleBellPdfUpload(event)" />
+  <input type="file" id="bell-img-input" accept="image/*" style="display:none" onchange="handleBellImageUpload(event)" />
   <div id="bell-pdf-status" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.1);border:1px solid rgba(217,161,37,0.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;"></div>
   <div id="bellOverrideBanner" style="display:none;font-size:12.5px;color:var(--gold-light);background:rgba(217,161,37,0.12);border:1px solid rgba(217,161,37,0.3);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.6;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;"></div>
   <div class="table-wrap">
@@ -803,6 +805,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- PDF.js (CDN) — used to read the uploaded monthly lunch menu PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <script>
 /*
@@ -943,11 +946,21 @@ async function saveAll() {
     if (!box) {
       box = document.createElement('div');
       box.id = 'save-error-box';
-      box.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#7f1d1d;color:#fff;padding:12px 16px;font-family:monospace;font-size:13px;line-height:1.4;border-top:2px solid #f87171;max-height:40vh;overflow:auto;';
+      box.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#7f1d1d;color:#fff;padding:12px 40px 12px 16px;font-family:monospace;font-size:13px;line-height:1.4;border-top:2px solid #f87171;max-height:40vh;overflow:auto;';
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'position:absolute;top:8px;right:12px;background:none;border:none;color:#fff;font-size:16px;cursor:pointer;line-height:1;';
+      closeBtn.onclick = () => box.remove();
+      box.appendChild(closeBtn);
       document.body.appendChild(box);
     }
-    box.textContent = 'SAVE ERROR: ' + msg;
-    try { alert('Save failed:\n' + msg); } catch(e) {}
+    box.childNodes.forEach(n=>{ if(n.nodeType===3) n.remove(); });
+    box.insertBefore(document.createTextNode('SAVE ERROR: ' + msg), box.firstChild);
+  } else {
+    // Successful save — clear any stale error banner from a previous failure.
+    var box2 = document.getElementById('save-error-box');
+    if (box2) box2.remove();
+    if (sb) setSyncStatus('ok','Live');
   }
 }
 
@@ -2098,6 +2111,60 @@ async function handleBellPdfUpload(evt){
     statusEl.textContent = '⚠️ Couldn\'t automatically read that PDF\'s layout. Use "+ Add Period" to enter it by hand instead.';
   }
   setTimeout(()=>{ statusEl.style.display='none'; }, 12000);
+}
+
+// ── Bell Schedule from screenshot/photo (client-side OCR via Tesseract.js) ─
+// Runs entirely in the browser — no API key or server needed. Works best on
+// clear, reasonably straight-on screenshots of a schedule table.
+async function parseImageToBellSchedules(file){
+  if(!window.Tesseract) throw new Error('OCR reader failed to load');
+  const { data } = await Tesseract.recognize(file, 'eng');
+  const rawLines = (data.text || '').split('\n').map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  if(!rawLines.length) throw new Error('No readable text found in that image');
+
+  const schedules = {};
+  let currentName = null;
+  rawLines.forEach(line=>{
+    const m = line.match(BELL_SCHEDULE_HEADING_RE);
+    const looksLikeHeading = m && !BELL_TIME_RE.test(line);
+    if(looksLikeHeading){
+      currentName = m[1].trim().replace(/\s+/g,' ');
+      if(/^regular$/i.test(currentName)) currentName = 'Regular Day';
+      if(!schedules[currentName]) schedules[currentName] = [];
+      return;
+    }
+    if(!currentName){
+      currentName = 'Regular Day';
+      if(!schedules[currentName]) schedules[currentName] = [];
+    }
+    const rowPeriods = parseBellLinesToPeriods([line]);
+    if(rowPeriods.length) schedules[currentName].push(...rowPeriods);
+  });
+
+  Object.keys(schedules).forEach(k=>{ if(!schedules[k].length) delete schedules[k]; });
+  if(!Object.keys(schedules).length) throw new Error('Could not find any period rows in that image');
+  return schedules;
+}
+async function handleBellImageUpload(evt){
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if(!file) return;
+  const statusEl = document.getElementById('bell-pdf-status');
+  statusEl.style.display='block';
+  statusEl.textContent='📷 Reading screenshot… this can take a few seconds';
+  try{
+    const parsed = await parseImageToBellSchedules(file);
+    const names = Object.keys(parsed);
+    names.forEach(name=>{ bellSchedules[name] = parsed[name]; });
+    if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = [];
+    syncLegacyBellFromRegular();
+    statusEl.textContent = `✅ Imported ${names.length} schedule${names.length!==1?'s':''} from the screenshot: ${names.join(', ')}. OCR isn't perfect — double-check the times and fix anything that came through oddly.`;
+    await saveAll(); renderAll();
+  }catch(err){
+    console.error('Bell image OCR error:', err);
+    statusEl.textContent = '⚠️ Couldn\'t automatically read that screenshot. Try a clearer, more zoomed-in photo, or use "+ Add Period" to enter it by hand.';
+  }
+  setTimeout(()=>{ statusEl.style.display='none'; }, 14000);
 }
 
 // ── Day Of override (assign a saved named schedule to a specific date) ─

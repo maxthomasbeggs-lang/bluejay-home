@@ -928,12 +928,24 @@ const DEFAULT_WEDNESDAY_BELL = [
   {id:108, period:'Period 6', cls:'4', start:'12:19 PM', end:'12:51 PM'},
   {id:109, period:'Period 7', cls:'4', start:'12:55 PM', end:'1:30 PM'},
 ];
+const DEFAULT_HALFDAY_BELL = [
+  {id:201, period:'Breakfast', cls:'—', start:'7:30 AM', end:'7:45 AM'},
+  {id:202, period:'Period 1', cls:'4', start:'7:50 AM', end:'8:12 AM'},
+  {id:203, period:'Period 2', cls:'4', start:'8:16 AM', end:'8:38 AM'},
+  {id:204, period:'Period 3', cls:'4', start:'8:42 AM', end:'9:04 AM'},
+  {id:205, period:'Period 4', cls:'4', start:'9:08 AM', end:'9:30 AM'},
+  {id:206, period:'Jay Hour', cls:'4', start:'9:34 AM', end:'9:56 AM'},
+  {id:207, period:'Period 5', cls:'4', start:'10:00 AM', end:'10:22 AM'},
+  {id:208, period:'Period 6', cls:'4', start:'10:26 AM', end:'10:48 AM'},
+  {id:209, period:'Period 7', cls:'4', start:'10:52 AM', end:'11:10 AM'},
+];
 const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
 // Named bell schedules, e.g. { "Regular Day": [ {period,cls,start,end}, ... ], "Early Release": [...] }
 // "Regular Day" always exists and mirrors the legacy `bell` array.
 const DEFAULT_BELL_SCHEDULES = {
   'Regular Day': DEFAULT_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})),
   'Wednesday': DEFAULT_WEDNESDAY_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})),
+  'Half Day': DEFAULT_HALFDAY_BELL.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})),
 };
 // Dated overrides: { "2026-10-15": "Assembly Day" } — a saved schedule name assigned to a specific date. Wins over weekday rules.
 const DEFAULT_BELL_OVERRIDES = {};
@@ -1076,7 +1088,7 @@ function applyState(row) {
     dinnerMenu = { weeks: [] };
     afsMenu = { weeks: [] };
     MEAL_STATE.lunch.weekIdx = MEAL_STATE.dinner.weekIdx = MEAL_STATE.afs.weekIdx = 0;
-    nextAid=2; nextTid=4; nextGid=1; nextCid=4; nextPid=110; nextEid=1;
+    nextAid=2; nextTid=4; nextGid=1; nextCid=4; nextPid=210; nextEid=1;
     saveAll();
     renderAll(); hideLoader();
     return;

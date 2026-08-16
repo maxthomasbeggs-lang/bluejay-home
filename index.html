@@ -237,9 +237,12 @@
   .field-row .field { flex:1; }
   .field label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--text3); margin-bottom:6px; }
   .field input, .field select, .field textarea { width:100%; padding:10px 12px; border-radius:8px; background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:'Fredoka',sans-serif; font-size:13.5px; }
+  .field select { color-scheme: dark; }
+  .field select option { background:var(--bg3); color:var(--text); }
   .field input[type="date"], .field input[type="time"] { color-scheme: dark; }
   @media (prefers-color-scheme: light) {
     .field input[type="date"], .field input[type="time"] { color-scheme: light; }
+    .field select { color-scheme: light; }
   }
   .field textarea { resize:vertical; min-height:70px; }
   .field input:focus, .field select:focus, .field textarea:focus { outline:none; border-color:var(--gold); }
@@ -1099,6 +1102,15 @@ function applyState(row) {
   bell    = row.bell    && row.bell.length    ? row.bell    : DEFAULT_BELL;
   bellSchedules = (row.bellSchedules && Object.keys(row.bellSchedules).length) ? row.bellSchedules : { 'Regular Day': bell.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end})) };
   if(!bellSchedules['Regular Day']) bellSchedules['Regular Day'] = bell.map(b=>({period:b.period, cls:b.cls, start:b.start, end:b.end}));
+  // Backfill any built-in named schedules (Wednesday, Half Day, etc.) that don't exist yet in a saved row —
+  // e.g. if they were added to the app after this user's data was last saved, or a prior save failed.
+  let bellSchedulesBackfilled = false;
+  Object.keys(DEFAULT_BELL_SCHEDULES).forEach(name=>{
+    if(!bellSchedules[name] || !bellSchedules[name].length){
+      bellSchedules[name] = JSON.parse(JSON.stringify(DEFAULT_BELL_SCHEDULES[name]));
+      bellSchedulesBackfilled = true;
+    }
+  });
   bellOverrides = row.bellOverrides || {};
   bellWeekdayRules = row.bellWeekdayRules || {};
   events  = row.events  || [];
@@ -1119,6 +1131,7 @@ function applyState(row) {
   setSyncStatus('ok','Live');
   renderAll();
   hideLoader();
+  if(bellSchedulesBackfilled) saveAll(); // persist the backfilled schedules so future loads don't need to redo this
 }
 
 // ── Load + subscribe ─────────────────────────────────────────
@@ -2241,6 +2254,7 @@ async function handleBellImageUpload(evt){
 // ── Day Of override (assign a saved named schedule to a specific date) ─
 function openDayOfModal(){
   const sel = document.getElementById('do-schedule');
+  if(!sel){ console.error('Day Of modal: #do-schedule select not found in DOM'); return; }
   const names = Object.keys(bellSchedules).length ? Object.keys(bellSchedules) : ['Regular Day'];
   sel.innerHTML = names.map(n=>`<option value="${n}">${n}</option>`).join('');
   document.getElementById('do-date').value = '';
